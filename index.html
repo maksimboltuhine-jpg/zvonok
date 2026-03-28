@@ -60,8 +60,8 @@ let peer, localStream, screenStream, currentCall, screenCall;
 const myId = localStorage.getItem('v6_id') || 'u' + Math.floor(Math.random()*90000+10000);
 localStorage.setItem('v6_id', myId);
 
-// Настройки "кристального" звука
-const audioConstraints = {
+// Конфигурация для максимально чистого звука
+const audioConfig = {
 echoCancellation: true,
 noiseSuppression: true,
 autoGainControl: true,
@@ -71,18 +71,17 @@ sampleRate: 48000
 async function getMedia(videoNeeded = true) {
 try {
 return await navigator.mediaDevices.getUserMedia({
-audio: audioConstraints,
+audio: audioConfig,
 video: videoNeeded
 });
 } catch (e) {
-if (videoNeeded) {
-return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
-}
+// Если камеры нет на ПК, пробуем только микрофон
+if (videoNeeded) return await navigator.mediaDevices.getUserMedia({ audio: audioConfig, video: false });
 throw e;
 }
 }
 
-function init() {
+function initPeer() {
 peer = new Peer(myId, {
 host: location.hostname,
 port: location.protocol === 'https:' ? 443 : (location.port || 80),
@@ -119,7 +118,7 @@ try {
 localStream = await getMedia();
 const call = peer.call(remoteId, localStream);
 handleCall(call);
-} catch(e) { alert("Ошибка доступа к устройствам"); }
+} catch(e) { alert("Ошибка доступа к микрофону"); }
 }
 
 function handleCall(call) {
@@ -140,12 +139,9 @@ document.getElementById('remote-video').srcObject = s;
 }
 
 async function shareScreen() {
-if(screenStream) {
-location.reload();
-return;
-}
+if(screenStream) { location.reload(); return; }
 try {
-// Запрос экрана со звуком системы
+// Захват экрана вместе с системным аудио
 screenStream = await navigator.mediaDevices.getDisplayMedia({
 video: { cursor: "always" },
 audio: {
@@ -177,7 +173,7 @@ navigator.clipboard.writeText(myId);
 alert("ID скопирован");
 }
 
-init();
+initPeer();
 </script>
 </body>
 </html>
