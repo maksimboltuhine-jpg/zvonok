@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ЗВОНОК v6.6 | Stable</title>
+<title>ЗВОНОК v6.7 | Stable</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --orange: #ffaa00; --bg: #0b0b0b; }
 body { background: var(--bg); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
@@ -12,9 +12,12 @@ body { background: var(--bg); color: #fff; font-family: 'Segoe UI', system-ui, s
 
 #video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid #444; aspect-ratio: 4/3; }
 video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+
 #local-video { position: absolute; top: 10px; right: 10px; width: 90px; height: 120px; border: 2px solid var(--green); border-radius: 12px; z-index: 15; transform: scaleX(-1); }
 
-#screen-container { width: 100%; margin-top: 10px; border-radius: 15px; overflow: hidden; display: none; border: 2px solid var(--orange); }
+#screen-container { width: 100%; margin-top: 10px; border-radius: 15px; overflow: hidden; display: none; border: 2px solid var(--orange); position: relative; }
+#remote-screen { cursor: pointer; }
+.fullscreen-hint { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.6); color: var(--orange); padding: 4px 8px; font-size: 10px; border-radius: 8px; z-index: 20; pointer-events: none; }
 
 .info { background: #000; padding: 15px; border-radius: 16px; margin-bottom: 20px; color: var(--green); font-weight: bold; cursor: pointer; border: 1px dashed #444; font-family: monospace; font-size: 16px; transition: 0.2s; }
 .info:active { transform: scale(0.96); opacity: 0.8; }
@@ -34,21 +37,28 @@ input:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.
 #incoming-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 
 .status-badge { font-size: 10px; padding: 4px 8px; border-radius: 20px; background: #333; margin-bottom: 10px; display: inline-block; }
+
+@keyframes pulse {
+0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); }
+100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
 </style>
 </head>
 <body>
 
 <div class="card">
 <div class="status-badge" id="net-status">OFFLINE</div>
-<h3 style="margin: 0 0 15px 0; color:var(--green); letter-spacing: 1px;">ЗВОНОК v6.6</h3>
+<h3 style="margin: 0 0 15px 0; color:var(--green); letter-spacing: 1px;">ЗВОНОК v6.7</h3>
 
 <div id="video-container">
-<video id="remote-video" autoplay playsinline></video>
-<video id="local-video" autoplay playsinline muted></video>
+<video id="remote-video" playsinline></video>
+<video id="local-video" playsinline muted></video>
 </div>
 
 <div id="screen-container">
-<video id="remote-screen" autoplay playsinline></video>
+<div class="fullscreen-hint">Нажмите для полного экрана</div>
+<video id="remote-screen" playsinline onclick="toggleFullscreen(this)"></video>
 </div>
 
 <div class="info" id="my-id-display" onclick="copyMyId()">ЗАГРУЗКА ID...</div>
@@ -79,7 +89,6 @@ input:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.
 <script>
 let peer, localStream, screenStream, currentCall, screenCall;
 
-// ПЕРМАНЕНТНЫЙ ID
 const myId = localStorage.getItem('v6_stable_id') || 'u' + Math.random().toString(36).substr(2, 7);
 localStorage.setItem('v6_stable_id', myId);
 
@@ -105,6 +114,7 @@ call.on('stream', s => {
 const sv = document.getElementById('remote-screen');
 sv.srcObject = s;
 document.getElementById('screen-container').style.display = 'block';
+sv.onloadedmetadata = () => sv.play().catch(console.error);
 });
 } else {
 document.getElementById('incoming-overlay').style.display = 'flex';
@@ -114,27 +124,27 @@ localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: tr
 call.answer(localStream);
 document.getElementById('incoming-overlay').style.display = 'none';
 handleCall(call);
-} catch (e) { alert("Нет доступа к камере"); }
+} catch (e) { alert("Ошибка доступа к камере или микрофону. Проверьте разрешения браузера."); }
 };
 }
 });
 
 peer.on('error', err => {
-if(err.type === 'peer-unavailable') alert('Пользователь не найден или оффлайн');
+if(err.type === 'peer-unavailable') alert('Пользователь не найден или отключен от сети.');
 console.error(err);
 });
 }
 
 async function makeCall() {
 const remoteId = document.getElementById('peer-id-input').value;
-if (!remoteId) return alert("Введите ID!");
-if (remoteId === myId) return alert("Нельзя звонить самому себе");
+if (!remoteId) return alert("Требуется ввод ID.");
+if (remoteId === myId) return alert("Вызов собственного ID недопустим.");
 
 try {
 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 const call = peer.call(remoteId, localStream);
 handleCall(call);
-} catch (e) { alert("Ошибка доступа к медиа"); }
+} catch (e) { alert("Ошибка доступа к медиа-устройствам. Убедитесь, что камера и микрофон разрешены."); }
 }
 
 function handleCall(call) {
@@ -148,12 +158,16 @@ if (!/Android|iPhone|iPad/i.test(navigator.userAgent)) {
 document.getElementById('screen-btn').style.display = 'block';
 }
 
-document.getElementById('local-video').srcObject = localStream;
+const lv = document.getElementById('local-video');
+lv.srcObject = localStream;
+lv.onloadedmetadata = () => lv.play().catch(console.error);
 
 call.on('stream', rs => {
 const rv = document.getElementById('remote-video');
+if (rv.srcObject !== rs) {
 rv.srcObject = rs;
-rv.play();
+rv.onloadedmetadata = () => rv.play().catch(console.error);
+}
 });
 
 call.on('close', endCall);
@@ -166,7 +180,7 @@ screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
 screenCall = peer.call(currentCall.peer, screenStream, { metadata: { type: 'screen' } });
 document.getElementById('screen-btn').innerText = "СТОП ЭКРАН";
 screenStream.getVideoTracks()[0].onended = stopScreen;
-} catch (e) { console.error(e); }
+} catch (e) { console.error("Ошибка захвата экрана:", e); }
 }
 
 function stopScreen() {
@@ -174,18 +188,43 @@ if (screenStream) screenStream.getTracks().forEach(t => t.stop());
 if (screenCall) screenCall.close();
 screenStream = null;
 document.getElementById('screen-btn').innerText = "🖥 ДЕМКА";
+document.getElementById('screen-container').style.display = 'none';
 }
 
 function toggleMic() {
-const t = localStream.getAudioTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('mic-toggle').classList.toggle('active', t.enabled);
+if (!localStream) return;
+const tracks = localStream.getAudioTracks();
+if (tracks.length > 0) {
+tracks[0].enabled = !tracks[0].enabled;
+document.getElementById('mic-toggle').classList.toggle('active', tracks[0].enabled);
+}
 }
 
 function toggleCam() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('cam-toggle').classList.toggle('active', t.enabled);
+if (!localStream) return;
+const tracks = localStream.getVideoTracks();
+if (tracks.length > 0) {
+tracks[0].enabled = !tracks[0].enabled;
+document.getElementById('cam-toggle').classList.toggle('active', tracks[0].enabled);
+}
+}
+
+function toggleFullscreen(element) {
+if (!document.fullscreenElement) {
+if (element.requestFullscreen) {
+element.requestFullscreen().catch(err => console.error("Ошибка полноэкранного режима:", err));
+} else if (element.webkitRequestFullscreen) { /* Safari */
+element.webkitRequestFullscreen();
+} else if (element.msRequestFullscreen) { /* IE11 */
+element.msRequestFullscreen();
+}
+} else {
+if (document.exitFullscreen) {
+document.exitFullscreen();
+} else if (document.webkitExitFullscreen) {
+document.webkitExitFullscreen();
+}
+}
 }
 
 function endCall() {
@@ -202,13 +241,5 @@ setTimeout(() => el.innerText = old, 1000);
 
 initPeer();
 </script>
-
-<style>
-@keyframes pulse {
-0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); }
-100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-}
-</style>
 </body>
 </html>
