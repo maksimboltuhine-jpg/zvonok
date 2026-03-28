@@ -2,215 +2,169 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ЗВОНОК v7.0 | Final Stable</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЗВОНОК v7.1 | Stable Connect</title>
 <style>
-:root { --green: #00ff88; --red: #ff3b3b; --orange: #ffaa00; --bg: #0b0b0b; }
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { background: var(--bg); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+:root { --green: #00ff88; --red: #ff3b3b; --bg: #111; }
+body { background: var(--bg); color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
 
-/* Основная карточка */
-.card { background: #1a1a1a; padding: 25px; border-radius: 32px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; z-index: 10; }
+.container { width: 90%; max-width: 400px; background: #222; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-/* Видео */
-#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid #444; aspect-ratio: 4/3; }
-video { width: 100%; height: 100%; object-fit: cover; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 12px; z-index: 20; transform: scaleX(-1); background: #111; }
+#video-grid { display: none; flex-direction: column; gap: 10px; margin: 15px 0; }
+video { width: 100%; border-radius: 10px; background: #000; }
+#local-video { width: 100px; position: absolute; top: 10px; right: 10px; border: 2px solid var(--green); transform: scaleX(-1); }
+.video-wrap { position: relative; }
 
-/* Трансляция экрана (Демка) */
-#screen-wrap { position: fixed; inset: 0; background: #000; z-index: 100; display: none; flex-direction: column; }
-#remote-screen { width: 100%; height: 100%; object-fit: contain; }
+.id-box { background: #000; padding: 10px; border-radius: 10px; color: var(--green); font-family: monospace; cursor: pointer; margin-bottom: 15px; border: 1px dashed #444; }
 
-.info { background: #000; padding: 15px; border-radius: 16px; margin-bottom: 20px; color: var(--green); font-weight: bold; cursor: pointer; border: 1px dashed #444; font-family: monospace; font-size: 1.1em; }
+input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #444; background: #000; color: #fff; box-sizing: border-box; }
 
-.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-input { grid-column: span 2; padding: 16px; border-radius: 16px; border: 1px solid #333; background: #080808; color: #fff; text-align: center; font-size: 16px; outline: none; }
-input:focus { border-color: var(--green); }
+.btn { width: 100%; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+.btn-call { background: var(--green); color: #000; }
+.btn-hang { background: var(--red); color: #fff; display: none; }
+.btn-screen { background: #ffaa00; color: #000; display: none; }
 
-.btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 14px; }
-.btn:active { transform: scale(0.95); }
-.btn-call { background: var(--green); color: #000; grid-column: span 2; }
-.btn-opt { background: #252525; color: #fff; }
-.btn-opt.active { background: var(--green); color: #000; }
-.btn-screen { background: var(--orange); color: #000; grid-column: span 2; display: none; }
-.btn-red { background: var(--red); color: #fff; }
+/* Окно входящего звонка */
+#incoming-box { display: none; background: #333; padding: 15px; border-radius: 15px; margin-top: 10px; border: 2px solid var(--green); }
 
-/* Оверлей звонка */
-#inc-call { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-
-.screen-nav { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; z-index: 110; }
+/* Окно демки */
+#screen-view { display: none; position: fixed; inset: 0; background: #000; z-index: 100; }
+#screen-video { width: 100%; height: 100%; object-fit: contain; }
+.screen-close { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: var(--red); color: #fff; border-radius: 10px; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<div class="card" id="main-ui">
-<h3 style="margin: 0 0 15px 0; color:var(--green); letter-spacing: 1px;">ЗВОНОК v7.0</h3>
+<div class="container">
+<h2 style="color: var(--green)">Call v7.1</h2>
 
-<div id="video-container">
+<div class="id-box" id="my-id" onclick="copyId()">Загрузка ID...</div>
+
+<div id="video-grid" class="video-wrap">
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
 </div>
 
-<div class="info" id="my-id-box" onclick="copyId()">ИНИЦИАЛИЗАЦИЯ...</div>
-
-<div id="start-form" class="controls">
-<input type="text" id="target-id" placeholder="ID СОБЕСЕДНИКА">
-<button class="btn btn-call" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
+<div id="ui-start">
+<input type="text" id="peer-id" placeholder="ID собеседника">
+<button class="btn btn-call" onclick="makeCall()">📞 Позвонить</button>
 </div>
 
-<div id="active-menu" class="controls" style="display:none">
-<button class="btn btn-opt active" id="m-tgl" onclick="tglMic()">🎤 ВКЛ</button>
-<button class="btn btn-opt active" id="v-tgl" onclick="tglVid()">📷 ВКЛ</button>
-<button class="btn btn-screen" id="scr-btn" onclick="shareScr()">🖥 ТРАНСЛЯЦИЯ</button>
-<button class="btn btn-red" style="grid-column: span 2; margin-top:10px" onclick="location.reload()">ЗАВЕРШИТЬ</button>
-</div>
+<div id="incoming-box">
+<p>Входящий звонок...</p>
+<button class="btn btn-call" onclick="answerCall()">Ответить</button>
+<button class="btn btn-hang" style="display:block" onclick="location.reload()">Сбросить</button>
 </div>
 
-<div id="screen-wrap">
-<video id="remote-screen" autoplay playsinline></video>
-<div class="screen-nav">
-<button class="btn btn-opt" onclick="toggleFull()">ВЕСЬ ЭКРАН</button>
-<button class="btn btn-red" onclick="closeScr()">ЗАКРЫТЬ</button>
-</div>
+<button class="btn btn-screen" id="btn-scr" onclick="toggleScreen()">🖥 Демонстрация экрана</button>
+<button class="btn btn-hang" id="btn-hang" onclick="location.reload()">Завершить звонок</button>
 </div>
 
-<div id="inc-call">
-<div style="background:var(--green); width:70px; height:70px; border-radius:50%; margin-bottom:20px; display:flex; align-items:center; justify-content:center; font-size:30px">📞</div>
-<h2 style="margin-bottom:30px">ВХОДЯЩИЙ ВЫЗОВ</h2>
-<button class="btn btn-call" id="ans-btn" style="width:250px; margin-bottom:15px">ОТВЕТИТЬ</button>
-<button class="btn btn-red" style="width:250px" onclick="location.reload()">ОТКЛОНИТЬ</button>
+<div id="screen-view">
+<video id="screen-video" autoplay playsinline></video>
+<div class="screen-close" onclick="closeScreen()">ЗАКРЫТЬ X</div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
-let peer, localStream, screenStream, currentCall, screenCall;
+let peer, localStream, currentCall, screenStream, screenCall;
+const myId = localStorage.getItem('v71_id') || Math.random().toString(36).substr(2, 6);
+localStorage.setItem('v71_id', myId);
+document.getElementById('my-id').innerText = myId;
 
-// Постоянный ID
-const myId = localStorage.getItem('v7_id') || 'u' + Math.random().toString(36).substr(2, 6);
-localStorage.setItem('v7_id', myId);
-document.getElementById('my-id-box').innerText = myId;
-
-function init() {
-peer = new Peer(myId, {
+// Конфигурация с STUN серверами (важно для работы через разный интернет)
+const peerConfig = {
 host: location.hostname,
 port: location.protocol === 'https:' ? 443 : (location.port || 80),
 path: '/peerjs',
 secure: location.protocol === 'https:',
-config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] }
-});
-
-peer.on('call', call => {
-if (call.metadata && call.metadata.type === 'screen') {
-call.answer();
-call.on('stream', stream => {
-document.getElementById('screen-wrap').style.display = 'flex';
-const sv = document.getElementById('remote-screen');
-sv.srcObject = stream;
-sv.play().catch(e => console.log("Autoplay blocked"));
-});
-} else {
-document.getElementById('inc-call').style.display = 'flex';
-document.getElementById('ans-btn').onclick = async () => {
-try {
-localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-call.answer(localStream);
-document.getElementById('inc-call').style.display = 'none';
-setupUI(call);
-} catch (e) {
-alert("Разрешите доступ к камере!");
-location.reload();
+config: {
+'iceServers': [
+{ urls: 'stun:stun.l.google.com:19302' },
+{ urls: 'stun:stun1.l.google.com:19302' }
+]
 }
 };
-}
-});
 
-peer.on('error', err => {
-if(err.type === 'peer-unavailable') alert("Собеседник не в сети");
-console.error(err);
-});
-}
+peer = new Peer(myId, peerConfig);
 
-async function startCall() {
-const tid = document.getElementById('target-id').value.trim();
-if(!tid) return alert("Введите ID");
-try {
-localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-const call = peer.call(tid, localStream);
-setupUI(call);
-} catch (e) {
-alert("Камера недоступна");
-}
-}
+peer.on('open', id => console.log('Подключено к серверу, мой ID:', id));
 
-function setupUI(call) {
-currentCall = call;
-document.getElementById('start-form').style.display = 'none';
-document.getElementById('active-menu').style.display = 'grid';
-document.getElementById('video-container').style.display = 'block';
-document.getElementById('local-video').srcObject = localStream;
-
-if(!/Mobi|Android/i.test(navigator.userAgent)) {
-document.getElementById('scr-btn').style.display = 'block';
-}
-
+// Обработка входящего вызова
+peer.on('call', call => {
+if (call.metadata?.type === 'screen') {
+call.answer();
 call.on('stream', stream => {
-const rv = document.getElementById('remote-video');rv.srcObject = stream;
-rv.play().catch(e => {});
+document.getElementById('screen-view').style.display = 'block';
+document.getElementById('screen-video').srcObject = stream;
+});
+} else {
+currentCall = call;
+document.getElementById('incoming-box').style.display = 'block';
+document.getElementById('ui-start').style.display = 'none';
+}
 });
 
+async function makeCall() {
+const targetId = document.getElementById('peer-id').value;
+if (!targetId) return alert('Введите ID!');
+
+try {
+localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+showVideoUI();
+const call = peer.call(targetId, localStream);
+handleCall(call);
+} catch (e) { alert('Ошибка камеры: ' + e.message); }
+}
+
+async function answerCall() {
+try {
+localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+document.getElementById('incoming-box').style.display = 'none';
+showVideoUI();
+currentCall.answer(localStream);
+handleCall(currentCall);
+} catch (e) { alert('Доступ запрещен!'); }
+}
+
+function handleCall(call) {
+currentCall = call;
+call.on('stream', remoteStream => {
+document.getElementById('remote-video').srcObject = remoteStream;
+});
 call.on('close', () => location.reload());
 }
 
-async function shareScr() {
+function showVideoUI() {
+document.getElementById('ui-start').style.display = 'none';
+document.getElementById('video-grid').style.display = 'flex';
+document.getElementById('btn-hang').style.display = 'block';
+document.getElementById('local-video').srcObject = localStream;
+if (!/Mobi|Android/i.test(navigator.userAgent)) {
+document.getElementById('btn-scr').style.display = 'block';
+}
+}
+
+async function toggleScreen() {
 if (screenStream) {
 screenStream.getTracks().forEach(t => t.stop());
 screenStream = null;
-document.getElementById('scr-btn').innerText = "🖥 ТРАНСЛЯЦИЯ";
 return;
 }
 try {
-screenStream = await navigator.mediaDevices.getDisplayMedia({video: true});
-screenCall = peer.call(currentCall.peer, screenStream, {metadata: {type: 'screen'}});
-document.getElementById('scr-btn').innerText = "🛑 ОСТАНОВИТЬ";
-screenStream.getVideoTracks()[0].onended = () => {
-document.getElementById('scr-btn').innerText = "🖥 ТРАНСЛЯЦИЯ";
-screenStream = null;
-};
+screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+screenCall = peer.call(currentCall.peer, screenStream, { metadata: { type: 'screen' } });
 } catch (e) { console.error(e); }
 }
 
-function toggleFull() {
-const v = document.getElementById('remote-screen');
-if (v.requestFullscreen) v.requestFullscreen();
-else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
-}
-
-function closeScr() {
-document.getElementById('screen-wrap').style.display = 'none';
-}
-
-function tglMic() {
-const t = localStream.getAudioTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('m-tgl').innerText = t.enabled ? "🎤 ВКЛ" : "🎤 ВЫКЛ";
-document.getElementById('m-tgl').classList.toggle('active', t.enabled);
-}
-
-function tglVid() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('v-tgl').innerText = t.enabled ? "📷 ВКЛ" : "📷 ВЫКЛ";
-document.getElementById('v-tgl').classList.toggle('active', t.enabled);
+function closeScreen() {
+document.getElementById('screen-view').style.display = 'none';
 }
 
 function copyId() {
 navigator.clipboard.writeText(myId);
-const b = document.getElementById('my-id-box');
-b.innerText = "СКОПИРОВАНО!";
-setTimeout(() => b.innerText = myId, 1000);
+alert('ID скопирован');
 }
-
-init();
 </script>
 </body>
 </html>
