@@ -60,7 +60,7 @@ let peer, localStream, screenStream, currentCall, screenCall;
 const myId = localStorage.getItem('v6_id') || 'u' + Math.floor(Math.random()*90000+10000);
 localStorage.setItem('v6_id', myId);
 
-// Конфигурация для максимально чистого звука
+// Конфиг звука для кристальной чистоты
 const audioConfig = {
 echoCancellation: true,
 noiseSuppression: true,
@@ -70,12 +70,8 @@ sampleRate: 48000
 
 async function getMedia(videoNeeded = true) {
 try {
-return await navigator.mediaDevices.getUserMedia({
-audio: audioConfig,
-video: videoNeeded
-});
+return await navigator.mediaDevices.getUserMedia({ audio: audioConfig, video: videoNeeded });
 } catch (e) {
-// Если камеры нет на ПК, пробуем только микрофон
 if (videoNeeded) return await navigator.mediaDevices.getUserMedia({ audio: audioConfig, video: false });
 throw e;
 }
@@ -118,7 +114,7 @@ try {
 localStream = await getMedia();
 const call = peer.call(remoteId, localStream);
 handleCall(call);
-} catch(e) { alert("Ошибка доступа к микрофону"); }
+} catch(e) { alert("Ошибка доступа"); }
 }
 
 function handleCall(call) {
@@ -126,32 +122,22 @@ currentCall = call;
 document.getElementById('setup-ui').style.display = 'none';
 document.getElementById('active-ui').style.display = 'grid';
 document.getElementById('video-container').style.display = 'block';
-
-if (localStream.getVideoTracks().length > 0) {
-document.getElementById('local-video').srcObject = localStream;
-}
-
+if (localStream.getVideoTracks().length > 0) document.getElementById('local-video').srcObject = localStream;
 if(!/Android|iPhone/i.test(navigator.userAgent)) document.getElementById('screen-btn').style.display = 'block';
-
-call.on('stream', s => {
-document.getElementById('remote-video').srcObject = s;
-});
+call.on('stream', s => document.getElementById('remote-video').srcObject = s);
 }
 
 async function shareScreen() {
 if(screenStream) { location.reload(); return; }
 try {
-// Захват экрана вместе с системным аудио
+// Запрос экрана с системным звуком
 screenStream = await navigator.mediaDevices.getDisplayMedia({
 video: { cursor: "always" },
-audio: {
-echoCancellation: true,
-noiseSuppression: true
-}
+audio: { echoCancellation: true, noiseSuppression: true }
 });
 screenCall = peer.call(currentCall.peer, screenStream, {metadata: {type: 'screen'}});
 document.getElementById('screen-btn').innerText = "СТОП ЭКРАН";
-} catch(e) { console.error("Ошибка демки:", e); }
+} catch(e) { console.error(e); }
 }
 
 function toggleMic() {
