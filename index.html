@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ЗВОНОК v6.5.3</title>
+<title>ЗВОНОК v6.5.4 | No Camera Support</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --orange: #ffaa00; --bg: #0b0b0b; }
 body { background: var(--bg); color: #fff; font-family: system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
 .card { background: #1a1a1a; padding: 20px; border-radius: 28px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #333; position: relative; }
 #video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 16px; overflow: hidden; background: #000; border: 1px solid #444; aspect-ratio: 4/3; }
 video { width: 100%; height: 100%; object-fit: cover; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 10px; transform: scaleX(-1); z-index: 5; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 10px; transform: scaleX(-1); z-index: 5; background: #222; }
 #remote-screen-container { width: 100%; margin-top: 10px; border-radius: 12px; overflow: hidden; display: none; border: 2px solid var(--orange); }
 .info { background: #222; padding: 12px; border-radius: 15px; margin-bottom: 15px; color: var(--green); font-weight: bold; cursor: pointer; border: 1px dashed #444; font-size: 14px; }
 .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-input { grid-column: span 2; padding: 15px; border-radius: 14px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; }
+input { grid-column: span 2; padding: 15px; border-radius: 14px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; outline: none; }
 .btn { padding: 15px; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; }
 .btn-main { background: var(--green); color: #000; grid-column: span 2; }
 .btn-opt { background: #333; color: #fff; }
@@ -27,7 +27,7 @@ input { grid-column: span 2; padding: 15px; border-radius: 14px; border: 1px sol
 <body>
 
 <div class="card">
-<h3 style="margin:0 0 10px 0; color:var(--green)">ЗВОНОК v6.5.3</h3>
+<h3 style="margin:0 0 10px 0; color:var(--green)">ЗВОНОК v6.5.4</h3>
 <div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
@@ -54,10 +54,24 @@ input { grid-column: span 2; padding: 15px; border-radius: 14px; border: 1px sol
 <button class="btn btn-red" style="display:block; width:200px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script><script>
-let peer, localStream, screenStream, currentCall, screenCall;
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+let peer, localStream, screenStream, currentCall;
 const myId = localStorage.getItem('v6_id') || 'u' + Math.floor(Math.random()*90000+10000);
 localStorage.setItem('v6_id', myId);
+
+// Умный захват медиа (сначала камера+мик, если нет - только мик)
+async function getMedia(videoNeeded = true) {
+try {
+return await navigator.mediaDevices.getUserMedia({ audio: true, video: videoNeeded });
+} catch (e) {
+if (videoNeeded) {
+console.warn("Камера не найдена, пробуем только микрофон...");
+return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+}
+throw e;
+}
+}
 
 function init() {
 peer = new Peer(myId, {
@@ -65,12 +79,7 @@ host: location.hostname,
 port: location.protocol === 'https:' ? 443 : (location.port || 80),
 path: '/peerjs',
 secure: location.protocol === 'https:',
-config: {
-'iceServers': [
-{ urls: 'stun:stun.l.google.com:19302' },
-{ urls: 'stun:stun1.l.google.com:19302' }
-]
-}
+config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
 });
 
 peer.on('open', id => document.getElementById('my-id-display').innerText = "ID: " + id);
@@ -86,7 +95,7 @@ return;
 }
 document.getElementById('inc-overlay').style.display = 'flex';
 document.getElementById('accept-btn').onclick = async () => {
-localStream = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
+localStream = await getMedia();
 call.answer(localStream);
 document.getElementById('inc-overlay').style.display = 'none';
 handleCall(call);
@@ -98,10 +107,10 @@ async function makeCall() {
 const remoteId = document.getElementById('peer-id-input').value;
 if(!remoteId) return alert("Введите ID");
 try {
-localStream = await navigator.mediaDevices.getUserMedia({audio:true, video:true});
+localStream = await getMedia();
 const call = peer.call(remoteId, localStream);
 handleCall(call);
-} catch(e) { alert("Нет доступа к камере"); }
+} catch(e) { alert("Микрофон и камера недоступны!"); }
 }
 
 function handleCall(call) {
@@ -109,23 +118,29 @@ currentCall = call;
 document.getElementById('setup-ui').style.display = 'none';
 document.getElementById('active-ui').style.display = 'grid';
 document.getElementById('video-container').style.display = 'block';
+
+if (localStream.getVideoTracks().length > 0) {
 document.getElementById('local-video').srcObject = localStream;
+} else {
+document.getElementById('cam-toggle').classList.remove('active');
+document.getElementById('cam-toggle').innerText = "❌ КАМ";
+}
+
 if(!/Android|iPhone/i.test(navigator.userAgent)) document.getElementById('screen-btn').style.display = 'block';
 
-call.on('stream', s => document.getElementById('remote-video').srcObject = s);
-call.on('close', () => location.reload());
+call.on('stream', s => {
+document.getElementById('remote-video').srcObject = s;
+});
 }
 
 async function shareScreen() {
 if(screenStream) {
-screenStream.getTracks().forEach(t => t.stop());
-screenStream = null;
-document.getElementById('screen-btn').innerText = "🖥 ТРАНСЛЯЦИЯ";
+location.reload(); // Простой способ остановить демку
 return;
 }
 try {
 screenStream = await navigator.mediaDevices.getDisplayMedia({video:true});
-screenCall = peer.call(currentCall.peer, screenStream, {metadata: {type: 'screen'}});
+peer.call(currentCall.peer, screenStream, {metadata: {type: 'screen'}});
 document.getElementById('screen-btn').innerText = "СТОП ЭКРАН";
 } catch(e) { console.error(e); }
 }
@@ -137,9 +152,13 @@ document.getElementById('mic-toggle').classList.toggle('active', t.enabled);
 }
 
 function toggleCam() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('cam-toggle').classList.toggle('active', t.enabled);
+const tracks = localStream.getVideoTracks();
+if (tracks.length > 0) {
+tracks[0].enabled = !tracks[0].enabled;
+document.getElementById('cam-toggle').classList.toggle('active', tracks[0].enabled);
+} else {
+alert("Камера не подключена к ПК");
+}
 }
 
 function copyId() {
