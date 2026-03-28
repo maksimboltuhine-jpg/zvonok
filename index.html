@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ЗВОНОК v6.7 | Stable</title>
+<title>ЗВОНОК v6.8 | Stable Release</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --orange: #ffaa00; --bg: #0b0b0b; }
 body { background: var(--bg); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
@@ -15,9 +15,8 @@ video { width: 100%; height: 100%; object-fit: cover; background: #000; }
 
 #local-video { position: absolute; top: 10px; right: 10px; width: 90px; height: 120px; border: 2px solid var(--green); border-radius: 12px; z-index: 15; transform: scaleX(-1); }
 
-#screen-container { width: 100%; margin-top: 10px; border-radius: 15px; overflow: hidden; display: none; border: 2px solid var(--orange); position: relative; }
-#remote-screen { cursor: pointer; }
-.fullscreen-hint { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.6); color: var(--orange); padding: 4px 8px; font-size: 10px; border-radius: 8px; z-index: 20; pointer-events: none; }
+#screen-container { width: 100%; margin-top: 10px; border-radius: 15px; overflow: hidden; display: none; border: 2px solid var(--orange); position: relative; cursor: pointer; }
+.fullscreen-hint { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); color: var(--orange); padding: 6px 10px; font-size: 11px; border-radius: 8px; z-index: 20; pointer-events: none; font-weight: bold; }
 
 .info { background: #000; padding: 15px; border-radius: 16px; margin-bottom: 20px; color: var(--green); font-weight: bold; cursor: pointer; border: 1px dashed #444; font-family: monospace; font-size: 16px; transition: 0.2s; }
 .info:active { transform: scale(0.96); opacity: 0.8; }
@@ -37,51 +36,42 @@ input:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.
 #incoming-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
 
 .status-badge { font-size: 10px; padding: 4px 8px; border-radius: 20px; background: #333; margin-bottom: 10px; display: inline-block; }
-
-@keyframes pulse {
-0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
-70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(0, 255, 136, 0); }
-100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
-}
 </style>
 </head>
 <body>
 
 <div class="card">
-<div class="status-badge" id="net-status">OFFLINE</div>
-<h3 style="margin: 0 0 15px 0; color:var(--green); letter-spacing: 1px;">ЗВОНОК v6.7</h3>
+<div class="status-badge" id="net-status">УСТАНОВКА СОЕДИНЕНИЯ...</div>
+<h3 style="margin: 0 0 15px 0; color:var(--green); letter-spacing: 1px;">ЗВОНОК v6.8</h3>
 
 <div id="video-container">
-<video id="remote-video" playsinline></video>
-<video id="local-video" playsinline muted></video>
+<video id="remote-video" autoplay playsinline></video>
+<video id="local-video" autoplay playsinline muted></video>
 </div>
 
-<div id="screen-container">
-<div class="fullscreen-hint">Нажмите для полного экрана</div>
-<video id="remote-screen" playsinline onclick="toggleFullscreen(this)"></video>
+<div id="screen-container" onclick="toggleFullscreen(this)">
+<div class="fullscreen-hint">Нажмите для полноэкранного режима</div>
+<video id="remote-screen" autoplay playsinline style="object-fit: contain;"></video>
 </div>
 
-<div class="info" id="my-id-display" onclick="copyMyId()">ЗАГРУЗКА ID...</div>
+<div class="info" id="my-id-display" onclick="copyMyId()">ИНИЦИАЛИЗАЦИЯ ИДЕНТИФИКАТОРА...</div>
 
 <div id="setup-ui" class="controls">
-<input type="text" id="peer-id-input" placeholder="ID СОБЕСЕДНИКА">
-<button class="btn btn-main" onclick="makeCall()">📞 ПОЗВОНИТЬ</button>
+<input type="text" id="peer-id-input" placeholder="ВВЕДИТЕ ID СОБЕСЕДНИКА">
+<button class="btn btn-main" onclick="makeCall()">📞 ИНИЦИИРОВАТЬ ВЫЗОВ</button>
 </div>
 
 <div id="call-ui" class="controls" style="display:none">
-<button class="btn btn-opt active" id="mic-toggle" onclick="toggleMic()">🎤 МИК</button>
-<button class="btn btn-opt active" id="cam-toggle" onclick="toggleCam()">📷 КАМ</button>
-<button class="btn btn-screen" id="screen-btn" onclick="shareScreen()">🖥 ДЕМКА</button>
-<button class="btn btn-red" id="hangup-btn" onclick="endCall()">ЗАВЕРШИТЬ</button>
+<button class="btn btn-opt active" id="mic-toggle" onclick="toggleMic()">🎤 МИКРОФОН</button>
+<button class="btn btn-opt active" id="cam-toggle" onclick="toggleCam()">📷 КАМЕРА</button>
+<button class="btn btn-screen" id="screen-btn" onclick="shareScreen()">🖥 ТРАНСЛЯЦИЯ ЭКРАНА</button>
+<button class="btn btn-red" id="hangup-btn" onclick="endCall()">ЗАВЕРШИТЬ СЕАНС</button>
 </div>
 </div>
 
 <div id="incoming-overlay">
-<div style="background: var(--green); width: 80px; height: 80px; border-radius: 50%; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; animation: pulse 1.5s infinite;">
-<span style="font-size: 40px;">📞</span>
-</div>
-<h2 style="color:#fff; margin-bottom: 30px;">ВХОДЯЩИЙ ВЫЗОВ</h2>
-<button class="btn btn-main" id="accept-btn" style="width:240px; margin-bottom:15px">ОТВЕТИТЬ</button>
+<h2 style="color:#fff; margin-bottom: 30px;">ВХОДЯЩЕЕ СОЕДИНЕНИЕ</h2>
+<button class="btn btn-main" id="accept-btn" style="width:240px; margin-bottom:15px">ПРИНЯТЬ</button>
 <button class="btn btn-red" style="display:block; width:240px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
@@ -89,6 +79,7 @@ input:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.
 <script>
 let peer, localStream, screenStream, currentCall, screenCall;
 
+// Генерация и хранение постоянного идентификатора
 const myId = localStorage.getItem('v6_stable_id') || 'u' + Math.random().toString(36).substr(2, 7);
 localStorage.setItem('v6_stable_id', myId);
 
@@ -98,23 +89,29 @@ host: location.hostname,
 port: location.protocol === 'https:' ? 443 : (location.port || 80),
 path: '/peerjs',
 secure: location.protocol === 'https:',
-debug: 1
+config: {
+'iceServers': [
+{ urls: 'stun:stun.l.google.com:19302' },
+{ urls: 'stun:stun1.l.google.com:19302' },
+{ urls: 'stun:stun2.l.google.com:19302' }
+]
+},
+debug: 2
 });
 
 peer.on('open', id => {
 document.getElementById('my-id-display').innerText = id;
-document.getElementById('net-status').innerText = 'ONLINE';
+document.getElementById('net-status').innerText = 'СЕТЬ ДОСТУПНА';
 document.getElementById('net-status').style.color = 'var(--green)';
 });
 
 peer.on('call', async (call) => {
 if (call.metadata && call.metadata.type === 'screen') {
 call.answer();
-call.on('stream', s => {
-const sv = document.getElementById('remote-screen');
-sv.srcObject = s;
+call.on('stream', remoteStream => {
+const screenVideoElement = document.getElementById('remote-screen');
+screenVideoElement.srcObject = remoteStream;
 document.getElementById('screen-container').style.display = 'block';
-sv.onloadedmetadata = () => sv.play().catch(console.error);
 });
 } else {
 document.getElementById('incoming-overlay').style.display = 'flex';
@@ -123,50 +120,52 @@ try {
 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 call.answer(localStream);
 document.getElementById('incoming-overlay').style.display = 'none';
-handleCall(call);
-} catch (e) { alert("Ошибка доступа к камере или микрофону. Проверьте разрешения браузера."); }
+setupCallInterface(call);
+} catch (error) {
+alert("Сбой аппаратного обеспечения: доступ к камере или микрофону запрещен.");
+}
 };
 }
 });
 
 peer.on('error', err => {
-if(err.type === 'peer-unavailable') alert('Пользователь не найден или отключен от сети.');
-console.error(err);
+if(err.type === 'peer-unavailable') alert('Целевой узел не обнаружен в сети.');
+console.error('Системная ошибка PeerJS:', err);
 });
 }
 
 async function makeCall() {
-const remoteId = document.getElementById('peer-id-input').value;
-if (!remoteId) return alert("Требуется ввод ID.");
-if (remoteId === myId) return alert("Вызов собственного ID недопустим.");
+const remoteId = document.getElementById('peer-id-input').value.trim();
+if (!remoteId) return alert("Необходимо указать идентификатор целевого узла.");
+if (remoteId === myId) return alert("Замыкание соединения на собственный узел недопустимо.");
 
 try {
 localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 const call = peer.call(remoteId, localStream);
-handleCall(call);
-} catch (e) { alert("Ошибка доступа к медиа-устройствам. Убедитесь, что камера и микрофон разрешены."); }
+setupCallInterface(call);
+} catch (error) {
+alert("Сбой аппаратного обеспечения. Проверьте настройки разрешений браузера.");
+}
 }
 
-function handleCall(call) {
+function setupCallInterface(call) {
 currentCall = call;
 document.getElementById('setup-ui').style.display = 'none';
 document.getElementById('call-ui').style.display = 'grid';
 document.getElementById('video-container').style.display = 'block';
 document.getElementById('hangup-btn').style.display = 'block';
 
-if (!/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
 document.getElementById('screen-btn').style.display = 'block';
 }
 
-const lv = document.getElementById('local-video');
-lv.srcObject = localStream;
-lv.onloadedmetadata = () => lv.play().catch(console.error);
+const localVideoElement = document.getElementById('local-video');
+localVideoElement.srcObject = localStream;
 
-call.on('stream', rs => {
-const rv = document.getElementById('remote-video');
-if (rv.srcObject !== rs) {
-rv.srcObject = rs;
-rv.onloadedmetadata = () => rv.play().catch(console.error);
+call.on('stream', remoteStream => {
+const remoteVideoElement = document.getElementById('remote-video');
+if (remoteVideoElement.srcObject !== remoteStream) {
+remoteVideoElement.srcObject = remoteStream;
 }
 });
 
@@ -178,44 +177,47 @@ if (screenStream) { stopScreen(); return; }
 try {
 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
 screenCall = peer.call(currentCall.peer, screenStream, { metadata: { type: 'screen' } });
-document.getElementById('screen-btn').innerText = "СТОП ЭКРАН";
+document.getElementById('screen-btn').innerText = "ЗАВЕРШИТЬ ТРАНСЛЯЦИЮ";
+
 screenStream.getVideoTracks()[0].onended = stopScreen;
-} catch (e) { console.error("Ошибка захвата экрана:", e); }
+} catch (error) {
+console.error("Процесс захвата экрана прерван:", error);
+}
 }
 
 function stopScreen() {
-if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+if (screenStream) screenStream.getTracks().forEach(track => track.stop());
 if (screenCall) screenCall.close();
 screenStream = null;
-document.getElementById('screen-btn').innerText = "🖥 ДЕМКА";
+document.getElementById('screen-btn').innerText = "🖥 ТРАНСЛЯЦИЯ ЭКРАНА";
 document.getElementById('screen-container').style.display = 'none';
 }
 
 function toggleMic() {
 if (!localStream) return;
-const tracks = localStream.getAudioTracks();
-if (tracks.length > 0) {
-tracks[0].enabled = !tracks[0].enabled;
-document.getElementById('mic-toggle').classList.toggle('active', tracks[0].enabled);
+const audioTracks = localStream.getAudioTracks();
+if (audioTracks.length > 0) {
+audioTracks[0].enabled = !audioTracks[0].enabled;
+document.getElementById('mic-toggle').classList.toggle('active', audioTracks[0].enabled);
 }
 }
 
 function toggleCam() {
 if (!localStream) return;
-const tracks = localStream.getVideoTracks();
-if (tracks.length > 0) {
-tracks[0].enabled = !tracks[0].enabled;
-document.getElementById('cam-toggle').classList.toggle('active', tracks[0].enabled);
+const videoTracks = localStream.getVideoTracks();
+if (videoTracks.length > 0) {
+videoTracks[0].enabled = !videoTracks[0].enabled;
+document.getElementById('cam-toggle').classList.toggle('active', videoTracks[0].enabled);
 }
 }
 
 function toggleFullscreen(element) {
 if (!document.fullscreenElement) {
 if (element.requestFullscreen) {
-element.requestFullscreen().catch(err => console.error("Ошибка полноэкранного режима:", err));
-} else if (element.webkitRequestFullscreen) { /* Safari */
+element.requestFullscreen();
+} else if (element.webkitRequestFullscreen) {
 element.webkitRequestFullscreen();
-} else if (element.msRequestFullscreen) { /* IE11 */
+} else if (element.msRequestFullscreen) {
 element.msRequestFullscreen();
 }
 } else {
@@ -233,10 +235,10 @@ location.reload();
 
 function copyMyId() {
 navigator.clipboard.writeText(myId);
-const el = document.getElementById('my-id-display');
-const old = el.innerText;
-el.innerText = "СКОПИРОВАНО!";
-setTimeout(() => el.innerText = old, 1000);
+const displayElement = document.getElementById('my-id-display');
+const originalText = displayElement.innerText;
+displayElement.innerText = "ДАННЫЕ СКОПИРОВАНЫ";
+setTimeout(() => displayElement.innerText = originalText, 1500);
 }
 
 initPeer();
