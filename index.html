@@ -3,204 +3,183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ЗВОНОК v6.5</title>
+<title>ЗВОНОК v6.6 | Stable</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --orange: #ffaa00; --bg: #0b0b0b; }
-body { background: var(--bg); color: #fff; font-family: system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; }
+body { background: var(--bg); color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
 
-.card { background: #1a1a1a; padding: 20px; border-radius: 28px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #333; position: relative; }
+.card { background: #1a1a1a; padding: 25px; border-radius: 32px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
 
-#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 16px; overflow: hidden; background: #000; border: 1px solid #444; }
-video { width: 100%; display: block; background: #000; }
+.status-dot { height: 10px; width: 10px; background: var(--red); border-radius: 50%; display: inline-block; margin-right: 5px; }
+.status-online { background: var(--green); box-shadow: 0 0 10px var(--green); }
 
-/* Своя камера */
-#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 10px; object-fit: cover; transform: scaleX(-1); z-index: 5; }
+#my-id-display {
+background: #000; padding: 12px; border-radius: 12px; font-family: monospace;
+margin: 15px 0; border: 1px dashed #444; cursor: pointer; transition: 0.2s;
+}
+#my-id-display:active { transform: scale(0.95); background: #222; }
 
-/* Контейнер демки */
-#screen-container { width: 100%; margin-top: 10px; border-radius: 12px; overflow: hidden; display: none; border: 1px solid var(--orange); position: relative; }
+input {
+width: 100%; padding: 15px; box-sizing: border-box; border-radius: 14px;
+border: 1px solid #333; background: #000; color: #fff; font-size: 16px; outline: none; margin-bottom: 10px;
+}
 
-/* Кнопка фулл-скрин */
-.fs-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #fff; border-radius: 5px; padding: 5px 10px; font-size: 10px; cursor: pointer; z-index: 10; }
+.btn {
+width: 100%; padding: 15px; border-radius: 14px; border: none; font-weight: bold;
+cursor: pointer; transition: 0.3s; font-size: 16px; margin-top: 5px;
+}
+.btn-call { background: var(--green); color: #000; }
+.btn-hangup { background: var(--red); color: #fff; display: none; }
 
-.info { background: #222; padding: 12px; border-radius: 15px; margin-bottom: 15px; color: var(--green); font-weight: bold; cursor: pointer; border: 1px dashed #444; font-size: 14px; }
-.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-input { grid-column: span 2; padding: 15px; border-radius: 14px; border: 1px solid #333; background: #000; color: #fff; text-align: center; font-size: 16px; }
+#video-container { position: relative; width: 100%; margin-top: 20px; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+video { width: 100%; height: 100%; object-fit: cover; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 30%; border: 2px solid var(--green); border-radius: 12px; z-index: 10; }
 
-.btn { padding: 15px; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 13px; }
-.btn-main { background: var(--green); color: #000; grid-column: span 2; }
-.btn-opt { background: #333; color: #fff; }
-.btn-opt.active { background: var(--green); color: #000; }
-.btn-screen { background: var(--orange); color: #000; grid-column: span 2; display: none; margin-top: 5px; }
-.btn-red { background: var(--red); color: #fff; grid-column: span 2; display: none; margin-top: 10px; }
-
-#incoming-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+.icon-btn { background: #333; color: white; padding: 10px; border-radius: 10px; border: none; cursor: pointer; }
+.icon-btn.active { background: var(--red); }
 </style>
 </head>
 <body>
 
-<div class="card">
-<h3 style="margin-top:0; color:var(--green)">ЗВОНОК v6.5</h3>
+<div class="card" id="main-card">
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+<span id="status-dot" class="status-dot"></span>
+<h2 style="margin: 0;">ЗВОНОК <span style="color:var(--green)">v6.6</span></h2>
+</div>
+
+<p style="font-size: 14px; color: #888;">Ваш постоянный ID (нажми, чтобы скопировать):</p>
+<div id="my-id-display">Загрузка...</div>
+
+<div id="call-ui">
+<input type="text" id="remote-id" placeholder="Введите ID собеседника">
+<button class="btn btn-call" onclick="makeCall()">📞 ПОЗВОНИТЬ</button>
+</div>
+
+<button class="btn btn-hangup" id="hangup-btn" onclick="endCall()">🔴 ЗАВЕРШИТЬ</button>
 
 <div id="video-container">
+<video id="local-video" autoplay muted playsinline></video>
 <video id="remote-video" autoplay playsinline></video>
-<video id="local-video" autoplay playsinline muted></video>
-<button class="fs-btn" onclick="openFS('remote-video')">ПОЛНЫЙ ЭКРАН</button>
+<div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px;">
+<button class="icon-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
+<button class="icon-btn" id="cam-btn" onclick="toggleCam()">📷</button>
 </div>
-
-<div id="screen-container">
-<video id="remote-screen" autoplay playsinline></video>
-<button class="fs-btn" onclick="openFS('remote-screen')">РАЗВЕРНУТЬ ДЕМКУ</button>
-</div>
-
-<div class="info" id="my-id-display" onclick="copyMyId()">ПОДКЛЮЧЕНИЕ...</div>
-
-<div id="setup-ui" class="controls">
-<input type="text" id="peer-id-input" placeholder="ID СОБЕСЕДНИКА">
-<button class="btn btn-main" onclick="makeCall()">📞 ПОЗВОНИТЬ</button>
-</div>
-
-<div id="call-ui" class="controls" style="display:none">
-<button class="btn btn-opt active" id="mic-toggle" onclick="toggleMic()">🎤 МИК</button>
-<button class="btn btn-opt active" id="cam-toggle" onclick="toggleCam()">📷 КАМ</button>
-<button class="btn btn-screen" id="screen-btn" onclick="shareScreen()">🖥 ТРАНСЛЯЦИЯ ЭКРАНА</button>
-<button class="btn btn-red" id="hangup-btn" onclick="endCall()">ЗАВЕРШИТЬ</button>
 </div>
 </div>
 
-<div id="incoming-overlay">
-<h2 style="color:var(--green)">ВХОДЯЩИЙ ВЫЗОВ</h2>
-<button class="btn btn-main" id="accept-btn" style="width:200px; margin-bottom:10px">ОТВЕТИТЬ</button>
-<button class="btn btn-red" style="display:block; width:200px" onclick="location.reload()">ОТКЛОНИТЬ</button>
-</div>
-
-<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-let peer, localStream, screenStream, currentCall, screenCall;
-const myId = localStorage.getItem('v6_id') || 'u' + Math.floor(Math.random()*90000+10000);
-localStorage.setItem('v6_id', myId);
+let peer, localStream, currentCall;
+const myIdDisplay = document.getElementById('my-id-display');
+const statusDot = document.getElementById('status-dot');
 
-function initPeer() {
-peer = new Peer(myId, {
-host: location.hostname,
-port: location.protocol === 'https:' ? 443 : (location.port || 80),
-path: '/peerjs',
-secure: location.protocol === 'https:'
-});
-
-peer.on('open', id => document.getElementById('my-id-display').innerText = "ВАШ ID: " + id);
-
-peer.on('call', async (call) => {
-if (call.metadata?.type === 'screen') {
-call.answer();
-call.on('stream', s => {
-const sv = document.getElementById('remote-screen');
-sv.srcObject = s;
-document.getElementById('screen-container').style.display = 'block';
-sv.play();
-});
-return;
+// 1. ПЕРМАНЕНТНЫЙ IDfunction getPersistentId() {
+let id = localStorage.getItem('v6_stable_id');
+if (!id) {
+id = 'user-' + Math.random().toString(36).substr(2, 9);
+localStorage.setItem('v6_stable_id', id);
+}
+return id;
 }
 
-document.getElementById('incoming-overlay').style.display = 'flex';
-document.getElementById('accept-btn').onclick = async () => {
-try {
-localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-call.answer(localStream);
-document.getElementById('incoming-overlay').style.display = 'none';
-handleCall(call);
-} catch (e) { alert("Ошибка доступа"); }
+const myId = getPersistentId();
+myIdDisplay.innerText = myId;
+
+// Копирование по клику
+myIdDisplay.onclick = () => {
+navigator.clipboard.writeText(myId);
+const originalText = myIdDisplay.innerText;
+myIdDisplay.innerText = "СКОПИРОВАНО!";
+setTimeout(() => myIdDisplay.innerText = originalText, 1000);
 };
+
+// Инициализация Peer
+function initPeer() {
+peer = new Peer(myId, {
+host: window.location.hostname,
+port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
+path: '/peerjs',
+debug: 1
+});
+
+peer.on('open', () => {
+statusDot.classList.add('status-online');
+console.log('Подключено к серверу. ID:', myId);
+});
+
+peer.on('call', async (call) => {
+if (confirm("Входящий вызов! Ответить?")) {
+const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+setupStream(stream);
+call.answer(stream);
+handleCall(call);
+} else {
+call.close();
+}
+});
+
+peer.on('error', (err) => {
+console.error('Peer Error:', err.type);
+if (err.type === 'peer-unavailable') alert('Собеседник не в сети');
 });
 }
 
 async function makeCall() {
-const remoteId = document.getElementById('peer-id-input').value;
-if (!remoteId) return alert("Введите ID!");
+const remoteId = document.getElementById('remote-id').value;
+if (!remoteId) return alert('Введите ID');
+
 try {
-localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-const call = peer.call(remoteId, localStream);
+const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+setupStream(stream);
+const call = peer.call(remoteId, stream);
 handleCall(call);
-} catch (e) { alert("Камера недоступна"); }
+} catch (err) {
+alert('Ошибка доступа к камере/микрофону');
+}
+}
+
+function setupStream(stream) {
+localStream = stream;
+document.getElementById('local-video').srcObject = stream;
+document.getElementById('video-container').style.display = 'block';
+document.getElementById('call-ui').style.display = 'none';
+document.getElementById('hangup-btn').style.display = 'block';
 }
 
 function handleCall(call) {
 currentCall = call;
-document.getElementById('setup-ui').style.display = 'none';
-document.getElementById('call-ui').style.display = 'grid';
-document.getElementById('video-container').style.display = 'block';
-document.getElementById('hangup-btn').style.display = 'block';
-
-if (!/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-document.getElementById('screen-btn').style.display = 'block';
-}
-
-document.getElementById('local-video').srcObject = localStream;
-
-call.on('stream', rs => {
-const rv = document.getElementById('remote-video');
-rv.srcObject = rs;
-rv.play();
-// Пытаемся включить режим "Картинка в картинке" для мобилок автоматически
-if (rv.requestPictureInPicture) rv.requestPictureInPicture().catch(() => {});
+call.on('stream', (remoteStream) => {
+document.getElementById('remote-video').srcObject = remoteStream;
 });
-
-call.on('close', () => endCall());
-call.peerConnection.oniceconnectionstatechange = () => {
-if (['disconnected', 'failed', 'closed'].includes(call.peerConnection.iceConnectionState)) endCall();
-};
+call.on('close', endCall);
 }
 
-// ФУНКЦИЯ ПОЛНОГО ЭКРАНА
-function openFS(id) {
-const el = document.getElementById(id);
-if (el.requestFullscreen) el.requestFullscreen();
-else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-else if (el.msRequestFullscreen) el.msRequestFullscreen();
+function endCall() {
+if (currentCall) currentCall.close();
+if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+document.getElementById('video-container').style.display = 'none';
+document.getElementById('call-ui').style.display = 'block';
+document.getElementById('hangup-btn').style.display = 'none';
+location.reload(); // Для полной очистки памяти и готовности к новому звонку
 }
 
-async function shareScreen() {
-if (screenStream) { stopScreen(); return; }
-try {
-screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-screenCall = peer.call(currentCall.peer, screenStream, { metadata: { type: 'screen' } });
-document.getElementById('screen-btn').innerText = "СТОП ЭКРАН";
-screenStream.getVideoTracks()[0].onended = stopScreen;
-} catch (e) { console.error(e); }
-}
-
-function stopScreen() {
-if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-if (screenCall) screenCall.close();
-screenStream = null;
-document.getElementById('screen-btn').innerText = "🖥 ТРАНСЛЯЦИЯ ЭКРАНА";
-}
-
+// Управление медиа
 function toggleMic() {
-const t = localStream.getAudioTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('mic-toggle').classList.toggle('active', t.enabled);
+const track = localStream.getAudioTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('mic-btn').classList.toggle('active', !track.enabled);
 }
 
 function toggleCam() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('cam-toggle').classList.toggle('active', t.enabled);
-}
-
-// ЧИСТОЕ ЗАВЕРШЕНИЕ ЗВОНКА
-function endCall() {
-if (localStream) localStream.getTracks().forEach(t => t.stop());
-if (screenStream) screenStream.getTracks().forEach(t => t.stop());
-if (currentCall) currentCall.close();
-location.reload();
-}
-
-function copyMyId() {
-navigator.clipboard.writeText(myId);
-alert("ID скопирован!");
+const track = localStream.getVideoTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('cam-btn').classList.toggle('active', !track.enabled);
 }
 
 initPeer();
 </script>
+
 </body>
 </html>
