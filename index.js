@@ -21,5 +21,5 @@ res.sendFile(path.join(__dirname, 'index.html'));
 
 const PORT = process.env.PORT || 10000;
 server.listen(PORT, '0.0.0.0', () => {
-console.log(`Сервер v6.6 активен на порту ${PORT}`);
+console.log(`Сервер запущен на порту ${PORT}`);
 });
