@@ -3,34 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v25 TITANIUM</title>
+<title>CALL v26 FORCE</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
-body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-.card { background: #111; padding: 25px; border-radius: 30px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; }
+body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+.card { background: #111; padding: 20px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #222; position: relative; }
 
-#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
-video { width: 100%; height: 100%; object-fit: contain; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
+#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 15px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
+video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 70px; height: 100px; border: 2px solid var(--green); border-radius: 8px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
 
-.controls { display: none; justify-content: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.btn { padding: 12px; border-radius: 15px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; font-size: 14px; }
-.btn-circle { width: 50px; height: 50px; border-radius: 50%; font-size: 20px; }
+.controls { display: none; justify-content: center; gap: 8px; margin-bottom: 10px; }
+.btn { padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; }
+.btn-circle { width: 45px; height: 45px; border-radius: 50%; font-size: 18px; }
 .off { background: var(--red) !important; }
 .active { background: var(--green) !important; color: #000; }
 
-.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 16px; }
-input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
-.btn-main { width: 100%; background: var(--green); color: #000; padding: 18px; font-size: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
+.my-id { background: #1a1a1a; padding: 12px; border-radius: 12px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 14px; word-break: break-all; }
+input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 10px; text-align: center; box-sizing: border-box; }
+.btn-main { width: 100%; background: var(--green); color: #000; padding: 15px; font-size: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
 
-#incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-#log { font-size: 11px; color: #555; margin-top: 10px; text-align: left; max-height: 50px; overflow-y: auto; }
+#incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+#debug { font-size: 9px; color: #444; margin-top: 10px; text-align: left; font-family: monospace; }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h3 style="margin:0; color:var(--green)">v25.0 TITANIUM BUILD</h3>
+<h3 style="margin:0; color:var(--green)">v26.0 FORCE BUILD</h3>
 
 <div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
@@ -41,58 +41,55 @@ input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333;
 <button class="btn btn-circle" id="mic-btn" onclick="toggleMic()">🎤</button>
 <button class="btn btn-circle" id="cam-btn" onclick="toggleCam()">📷</button>
 <button class="btn btn-circle" id="screen-btn" onclick="toggleScreen()">🖥</button>
-<button class="btn" onclick="location.reload()" style="background:var(--red)">СБРОС</button>
+<button class="btn" onclick="location.reload()" style="background:var(--red)">END</button>
 </div>
 
-<div class="my-id" id="my-id" onclick="copyId()">ПОДКЛЮЧЕНИЕ...</div>
+<div class="my-id" id="my-id" onclick="copyId()">CONNECTING...</div>
 
 <div id="ui">
 <input type="text" id="target-id" placeholder="ID ДРУГА">
 <button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
 </div>
 
-<div id="log">Инициализация...</div>
+<div id="debug">System init...</div>
 </div>
 
 <div id="incoming">
 <h2 style="color:var(--green)">ВХОДЯЩИЙ ВЫЗОВ</h2>
-<button class="btn-main" id="answer-btn" style="width:250px; margin-bottom: 20px;">ОТВЕТИТЬ</button>
-<button class="btn-main" style="background:var(--red); color:#fff; width:250px" onclick="location.reload()">ОТКЛОНИТЬ</button>
+<button class="btn-main" id="answer-btn" style="width:200px; margin-bottom: 15px;">ОТВЕТИТЬ</button>
+<button class="btn-main" style="background:var(--red); color:#fff; width:200px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-const logArea = document.getElementById('log');
-function log(m) { logArea.innerText = m; console.log(m); }
-
-// Генерируем ID один раз для устройства
-let myId = localStorage.getItem('v25_id') || ('u' + Math.floor(Math.random()*90000+10000));
-localStorage.setItem('v25_id', myId);
+const dbg = (m) => { document.getElementById('debug').innerText = m; console.log(m); };
+let myId = localStorage.getItem('v26_id') || ('u' + Math.floor(Math.random()*9000+1000));
+localStorage.setItem('v26_id', myId);
 
 let peer, localStream, currentCall, screenStream;
 
 function init() {
-// НАСТРОЙКА ДЛЯ ГЛОБАЛЬНОЙ СВЯЗИ
-peer = new Peer(myId, {
-host: window.location.hostname, // Берем адрес твоего сервера на Render
-port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
+// ЖЕСТКАЯ ПРИВЯЗКА К ТВОЕМУ СЕРВЕРУ
+const config = {
+host: window.location.hostname,
 path: '/peerjs',
+port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
 secure: window.location.protocol === 'https:',
+debug: 3,
 config: {
 'iceServers': [
 { urls: 'stun:stun.l.google.com:19302' },
 { urls: 'stun:stun1.l.google.com:19302' },
-{ urls: 'stun:stun2.l.google.com:19302' },
-{ urls: 'stun:stun.l.google.com:19302?transport=udp' }
-],
-'sdpSemantics': 'unified-plan',
-'iceCandidatePoolSize': 10
+{ urls: 'stun:stun2.l.google.com:19302' }
+]
 }
-});
+};
+
+peer = new Peer(myId, config);
 
 peer.on('open', id => {
-document.getElementById('my-id').innerText = "ТВОЙ ID: " + id;
-log("Сервер готов. Ждем вызов.");
+document.getElementById('my-id').innerText = "ID: " + id;
+dbg("Сервер: " + config.host);
 });
 
 peer.on('call', call => {
@@ -103,41 +100,22 @@ localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: tr
 call.answer(localStream);
 document.getElementById('incoming').style.display = 'none';
 setupCall(call);
-} catch (e) { alert("Включи камеру!"); }
+} catch (e) { dbg("Ошибка камеры: " + e.message); }
 };
 });
 
-peer.on('error', err => {
-log("Ошибка: " + err.type);
-if(err.type === 'network') log("Проблема с сетью/сервером!");
-});
+peer.on('error', e => { dbg("Peer Error: " + e.type); });
 }
 
 async function startCall() {
 const id = document.getElementById('target-id').value.trim();
 if (!id) return;
 try {
-log("Захват медиа...");
+dbg("Захват медиа...");
 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-log("Вызываем " + id);
+dbg("Звонок на " + id);
 setupCall(peer.call(id, localStream));
-} catch (e) { log("Камера не найдена"); }
-}
-
-async function safePlay(videoElement, stream) {
-// ФИКС AbortError: сначала ставим поток, потом ждем готовности
-if ("srcObject" in videoElement) {
-videoElement.srcObject = stream;
-} else {
-videoElement.src = window.URL.createObjectURL(stream);
-}
-
-try {
-await videoElement.play();
-} catch (err) {
-log("Автоплей заблокирован. Кликни для звука.");
-document.body.onclick = () => videoElement.play();
-}
+} catch (e) { dbg("Ошибка доступа: " + e.name); }
 }
 
 function setupCall(call) {
@@ -148,57 +126,52 @@ document.getElementById('controls').style.display = 'flex';
 document.getElementById('local-video').srcObject = localStream;
 
 call.on('stream', remoteStream => {
-log("Стрим получен");
 const rv = document.getElementById('remote-video');
-safePlay(rv, remoteStream);
+// ФИКС AbortError: сначала пауза, потом смена, потом старт
+rv.pause();
+rv.srcObject = remoteStream;
+rv.onloadedmetadata = () => {
+rv.play().catch(e => {
+dbg("Нужен клик для звука");
+document.body.onclick = () => rv.play();
 });
-
-call.on('close', () => location.reload());
+};
+});
 }
 
 async function toggleScreen() {
 if (!currentCall) return;
 const btn = document.getElementById('screen-btn');
 const vSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-const aSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'audio');
 
 if (!screenStream) {
 try {
 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-const sVideoTrack = screenStream.getVideoTracks()[0];
-const sAudioTrack = screenStream.getAudioTracks()[0];
-
-vSender.replaceTrack(sVideoTrack);
-if (sAudioTrack && aSender) aSender.replaceTrack(sAudioTrack);
-
+vSender.replaceTrack(screenStream.getVideoTracks()[0]);
 document.getElementById('local-video').srcObject = screenStream;
 btn.classList.add('active');
-sVideoTrack.onended = () => toggleScreen();
-} catch (e) { log("Демка отменена"); }
+} catch (e) { dbg("Демка отмена"); }
 } else {
 screenStream.getTracks().forEach(t => t.stop());
 screenStream = null;
 vSender.replaceTrack(localStream.getVideoTracks()[0]);
-if (aSender) aSender.replaceTrack(localStream.getAudioTracks()[0]);
 document.getElementById('local-video').srcObject = localStream;
 btn.classList.remove('active');
 }
 }
 
 function toggleMic() {
-const t = localStream.getAudioTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('mic-btn').classList.toggle('off', !t.enabled);
+localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+document.getElementById('mic-btn').classList.toggle('off', !localStream.getAudioTracks()[0].enabled);
 }
 
 function toggleCam() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('cam-btn').classList.toggle('off', !t.enabled);
+localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+document.getElementById('cam-btn').classList.toggle('off', !localStream.getVideoTracks()[0].enabled);
 }
 
 function copyId() {
-const id = document.getElementById('my-id').innerText.replace("ТВОЙ ID: ", "");
+const id = document.getElementById('my-id').innerText.replace("ID: ", "");
 navigator.clipboard.writeText(id).then(() => alert("ID скопирован!"));
 }
 
