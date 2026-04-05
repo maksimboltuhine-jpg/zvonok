@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v26 FORCE</title>
+<title>CALL v27 RELAY</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
 body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
@@ -24,13 +24,13 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 .btn-main { width: 100%; background: var(--green); color: #000; padding: 15px; font-size: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
 
 #incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-#debug { font-size: 9px; color: #444; margin-top: 10px; text-align: left; font-family: monospace; }
+#debug { font-size: 9px; color: #666; margin-top: 10px; text-align: left; font-family: monospace; }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h3 style="margin:0; color:var(--green)">v26.0 FORCE BUILD</h3>
+<h3 style="margin:0; color:var(--green)">v27.0 RELAY BUILD</h3>
 
 <div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
@@ -63,25 +63,38 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
 const dbg = (m) => { document.getElementById('debug').innerText = m; console.log(m); };
-let myId = localStorage.getItem('v26_id') || ('u' + Math.floor(Math.random()*9000+1000));
-localStorage.setItem('v26_id', myId);
+let myId = localStorage.getItem('v27_id') || ('u' + Math.floor(Math.random()*9000+1000));
+localStorage.setItem('v27_id', myId);
 
 let peer, localStream, currentCall, screenStream;
 
 function init() {
-// ЖЕСТКАЯ ПРИВЯЗКА К ТВОЕМУ СЕРВЕРУ
 const config = {
 host: window.location.hostname,
 path: '/peerjs',
 port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
 secure: window.location.protocol === 'https:',
-debug: 3,
 config: {
+// ВОТ ОНО: БЕСПЛАТНЫЙ TURN СЕРВЕР ДЛЯ ПРОБИВА МОБИЛЬНОГО ИНТЕРНЕТА
 'iceServers': [
 { urls: 'stun:stun.l.google.com:19302' },
-{ urls: 'stun:stun1.l.google.com:19302' },
-{ urls: 'stun:stun2.l.google.com:19302' }
-]
+{
+urls: 'turn:openrelay.metered.ca:80',
+username: 'openrelayproject',
+credential: 'openrelayproject'
+},
+{
+urls: 'turn:openrelay.metered.ca:443',
+username: 'openrelayproject',
+credential: 'openrelayproject'
+},
+{
+urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+username: 'openrelayproject',
+credential: 'openrelayproject'
+}
+],
+'iceCandidatePoolSize': 10
 }
 };
 
@@ -89,7 +102,7 @@ peer = new Peer(myId, config);
 
 peer.on('open', id => {
 document.getElementById('my-id').innerText = "ID: " + id;
-dbg("Сервер: " + config.host);
+dbg("Сервер: OK (" + window.location.hostname + ")");
 });
 
 peer.on('call', call => {
@@ -115,7 +128,7 @@ dbg("Захват медиа...");
 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 dbg("Звонок на " + id);
 setupCall(peer.call(id, localStream));
-} catch (e) { dbg("Ошибка доступа: " + e.name); }
+} catch (e) { dbg("Ошибка камеры. Проверь разрешения."); }
 }
 
 function setupCall(call) {
@@ -127,15 +140,17 @@ document.getElementById('local-video').srcObject = localStream;
 
 call.on('stream', remoteStream => {
 const rv = document.getElementById('remote-video');
-// ФИКС AbortError: сначала пауза, потом смена, потом старт
-rv.pause();
+// ФИКС AbortError: проверяем, не пытаемся ли мы загрузить тот же стрим
+if (rv.srcObject !== remoteStream) {
 rv.srcObject = remoteStream;
-rv.onloadedmetadata = () => {
 rv.play().catch(e => {
-dbg("Нужен клик для звука");
+// Если ошибка AbortError - просто игнорим, плеер сам разберется
+if (e.name !== 'AbortError') {
+dbg("Кликни на экран для звука!");
 document.body.onclick = () => rv.play();
+}
 });
-};
+}
 });
 }
 
@@ -143,31 +158,52 @@ async function toggleScreen() {
 if (!currentCall) return;
 const btn = document.getElementById('screen-btn');
 const vSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+const aSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'audio');
 
 if (!screenStream) {
 try {
+// ВОЗВРАЩАЕМ ЗВУК ДЕМКИ
 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+
 vSender.replaceTrack(screenStream.getVideoTracks()[0]);
+
+// Если юзер дал доступ к звуку системы, подменяем микрофон на звук компа
+if (screenStream.getAudioTracks().length > 0 && aSender) {
+aSender.replaceTrack(screenStream.getAudioTracks()[0]);
+dbg("Демка: видео + звук");
+} else {
+dbg("Демка: только видео");
+}
+
 document.getElementById('local-video').srcObject = screenStream;
 btn.classList.add('active');
-} catch (e) { dbg("Демка отмена"); }
+
+screenStream.getVideoTracks()[0].onended = () => toggleScreen();
+} catch (e) { dbg("Демка отменена"); }
 } else {
+// Возврат камеры и микрофона
 screenStream.getTracks().forEach(t => t.stop());
 screenStream = null;
+
 vSender.replaceTrack(localStream.getVideoTracks()[0]);
+if (aSender) aSender.replaceTrack(localStream.getAudioTracks()[0]);
+
 document.getElementById('local-video').srcObject = localStream;
 btn.classList.remove('active');
+dbg("Возврат камеры");
 }
 }
 
 function toggleMic() {
-localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-document.getElementById('mic-btn').classList.toggle('off', !localStream.getAudioTracks()[0].enabled);
+const track = localStream.getAudioTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('mic-btn').classList.toggle('off', !track.enabled);
 }
 
 function toggleCam() {
-localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-document.getElementById('cam-btn').classList.toggle('off', !localStream.getVideoTracks()[0].enabled);
+const track = localStream.getVideoTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('cam-btn').classList.toggle('off', !track.enabled);
 }
 
 function copyId() {
