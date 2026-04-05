@@ -3,203 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v24 GLOBAL</title>
+<title>CALL v37 LEGACY</title>
 <style>
-:root { --green: #00ff88; --red: #ff3b3b; --bg: #080808; }
-body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-.card { background: #121212; padding: 25px; border-radius: 28px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-
-#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
-video { width: 100%; height: 100%; object-fit: contain; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 85px; height: 115px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; background: #1a1a1a; }
-
-.controls { display: none; justify-content: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.btn { padding: 14px; border-radius: 16px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; transition: 0.2s; }
-.btn-circle { width: 55px; height: 55px; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; }
-.off { background: var(--red) !important; }
-.active { background: var(--green) !important; color: #000; }
-
-.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; }
-input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 12px; text-align: center; box-sizing: border-box; font-size: 16px; }
-.btn-main { width: 100%; background: var(--green); color: #000; padding: 18px; font-size: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
-
-#incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-#status { font-size: 11px; color: #555; margin-top: 10px; }
+:root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
+body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.card { background: #111; padding: 25px; border-radius: 25px; width: 90%; max-width: 360px; text-align: center; border: 1px solid #222; }
+#video-view { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 15px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+video { width: 100%; height: 100%; object-fit: cover; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 70px; height: 90px; border: 1px solid var(--green); border-radius: 10px; z-index: 5; transform: scaleX(-1); }
+.controls { display: none; justify-content: center; gap: 15px; margin-top: 10px; }
+.btn-round { width: 50px; height: 50px; border-radius: 50%; border: none; background: #222; color: #fff; font-size: 20px; cursor: pointer; }
+.id-display { background: #1a1a1a; padding: 15px; border-radius: 12px; margin: 10px 0; color: var(--green); font-family: monospace; font-weight: bold; border: 1px solid #333; cursor: pointer; }
+input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 10px; text-align: center; box-sizing: border-box; }
+.btn-call { width: 100%; background: var(--green); color: #000; padding: 15px; font-size: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+#status { font-size: 10px; color: #444; margin-top: 10px; }
+#inc-box { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h3 style="margin:0; color:var(--green); letter-spacing: 1px;">v24 GLOBAL CALL</h3>
-
-<div id="video-container">
+<div id="video-view">
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
 </div>
 
 <div class="controls" id="controls">
-<button class="btn btn-circle" id="mic-btn" onclick="toggleMic()">🎤</button>
-<button class="btn btn-circle" id="cam-btn" onclick="toggleCam()">📷</button>
-<button class="btn btn-circle" id="screen-btn" onclick="toggleScreen()">🖥</button>
-<button class="btn" onclick="location.reload()" style="background:var(--red)">СБРОС</button>
+<button class="btn-round" id="m-btn" onclick="tMic()">🎤</button>
+<button class="btn-round" id="v-btn" onclick="tVid()">📷</button>
+<button class="btn-round" style="background:var(--red)" onclick="location.reload()">🔚</button>
 </div>
 
-<div class="my-id" id="my-id" onclick="copyId()">ПОЛУЧЕНИЕ ID...</div>
+<div class="id-display" id="my-id" onclick="copyId()">ЗАГРУЗКА...</div>
 
-<div id="ui">
-<input type="text" id="target-id" placeholder="ВВЕДИ ID ДРУГА">
-<button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
+<div id="ui-main">
+<input type="text" id="peer-target" placeholder="ID ДРУГА">
+<button class="btn-call" onclick="makeCall()">📞 ПОЗВОНИТЬ</button>
 </div>
 
-<div id="status">Готов к подключению</div>
+<div id="status">INITIALIZING...</div>
 </div>
 
-<div id="incoming">
+<div id="inc-box">
 <h2 style="color:var(--green)">ВХОДЯЩИЙ ВЫЗОВ</h2>
-<button class="btn-main" id="answer-btn" style="width:250px; margin-bottom: 20px;">ОТВЕТИТЬ</button>
-<button class="btn-main" style="background:var(--red); color:#fff; width:250px;" onclick="location.reload()">ОТКЛОНИТЬ</button>
+<button class="btn-call" id="ans-btn" style="width:200px; margin-bottom: 20px;">ОТВЕТИТЬ</button>
+<button class="btn-call" style="background:var(--red); color:#fff; width:200px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-const statusMsg = (m)
-=> document.getElementById('status').innerText = m;
-let myId = localStorage.getItem('v24_id') || ('id' + Math.floor(Math.random()*90000+10000));
-localStorage.setItem('v24_id', myId);
+// Заменяем все стрелочные функции на обычные (совместимость)
+function stat(t) { document.getElementById('status').innerText = t; }
 
-let peer, localStream, currentCall, screenStream;
-
-function init() {
-// ЖЕСТКАЯ НАСТРОЙКА ДЛЯ ДАЛЬНИХ ЗВОНКОВ
-peer = new Peer(myId, {
-host: location.hostname,
-port: location.port || (location.protocol === 'https:' ? 443 : 80),
-path: '/peerjs',
-secure: location.protocol === 'https:',
-config: {
-'iceServers': [
-{ urls: 'stun:stun.l.google.com:19302' },
-{ urls: 'stun:stun1.l.google.com:19302' },
-{ urls: 'stun:stun2.l.google.com:19302' },
-{ urls: 'stun:stun3.l.google.com:19302' },
-{ urls: 'stun:stun4.l.google.com:19302' },
-{ urls: 'stun:stun.voipstunt.com' },
-{ urls: 'stun:stun.ekiga.net' },
-{ urls: 'stun:stun.ideasip.com' },
-{ urls: 'stun:stun.schlund.de' },
-{ urls: 'stun:stun.stunprotocol.org:3478' }
-],
-'iceCandidatePoolSize': 10
+var myId = localStorage.getItem('p_id');
+if (!myId) {
+myId = 'id-' + Math.floor(Math.random() * 9000 + 1000);
+localStorage.setItem('p_id', myId);
 }
+
+// Инициализация Peer
+var peer = new Peer(myId, {
+host: 'zvonok-3w3f.onrender.com',
+port: 443,
+secure: true,
+path: '/peerjs'
 });
 
-peer.on('open', id => {
-document.getElementById('my-id').innerText = "ТВОЙ ID: " + id;
-statusMsg("Связь с сервером установлена");
+var stream;
+
+peer.on('open', function(id) {
+document.getElementById('my-id').innerText = "ID: " + id;
+stat("READY (LEGACY MODE)");
 });
 
-peer.on('call', call => {
-document.getElementById('incoming').style.display = 'flex';
-document.getElementById('answer-btn').onclick = async () => {
-try {
-localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-call.answer(localStream);
-document.getElementById('incoming').style.display = 'none';
-setupCall(call);
-} catch (e) { alert("Ошибка доступа к камере!"); }
+// Входящий звонок
+peer.on('call', function(call) {
+document.getElementById('inc-box').style.display = 'flex';
+document.getElementById('ans-btn').onclick = function() {
+navigator.mediaDevices.getUserMedia({video: true, audio: true})
+.then(function(s) {
+stream = s;
+call.answer(stream);
+document.getElementById('inc-box').style.display = 'none';
+handleCall(call);
+})
+.catch(function(err) { alert("Ошибка камеры"); });
 };
 });
 
-peer.on('error', err => {
-console.error(err);
-statusMsg("Ошибка сети: " + err.type);
-});
+// Исходящий звонок
+function makeCall() {
+var tid = document.getElementById('peer-target').value.trim();
+if(!tid) return;
+stat("STARTING CAMERA...");
+navigator.mediaDevices.getUserMedia({video: true, audio: true})
+.then(function(s) {
+stream = s;
+var call = peer.call(tid, stream);
+handleCall(call);
+})
+.catch(function(err) { stat("CAMERA ERROR"); });
 }
 
-async function startCall() {
-const id = document.getElementById('target-id').value.trim();
-if (!id) return alert("Введи ID!");
-try {
-statusMsg("Запуск камеры...");
-localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-statusMsg("Вызов...");
-setupCall(peer.call(id, localStream));
-} catch (e) { alert("Не удалось включить камеру"); }
-}
-
-function setupCall(call) {
-currentCall = call;
-document.getElementById('video-container').style.display = 'block';
-document.getElementById('ui').style.display = 'none';
+function handleCall(call) {
+document.getElementById('video-view').style.display = 'block';
+document.getElementById('ui-main').style.display = 'none';
 document.getElementById('controls').style.display = 'flex';
-document.getElementById('local-video').srcObject = localStream;
+document.getElementById('local-video').srcObject = stream;
 
-call.on('stream', stream => {
-statusMsg("Соединение активно");
-const rv = document.getElementById('remote-video');
-rv.srcObject = stream;
-// Фикс автоплея звука
-rv.play().catch(() => {
-statusMsg("Нажми на экран для включения звука");
-document.body.onclick = () => rv.play();
-});
+call.on('stream', function(rs) {
+stat("CONNECTED");
+document.getElementById('remote-video').srcObject = rs;
 });
 
-call.on('close', () => location.reload());
+call.on('error', function() { location.reload(); });
+call.on('close', function() { location.reload(); });
 }
 
-async function toggleScreen() {
-if (!currentCall) return;
-const btn = document.getElementById('screen-btn');
-const vSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-const aSender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'audio');
-
-if (!screenStream) {
-try {
-// ЗАПРОС ЭКРАНА СО ЗВУКОМ СИСТЕМЫ
-screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-const sVideoTrack = screenStream.getVideoTracks()[0];
-const sAudioTrack = screenStream.getAudioTracks()[0];
-
-vSender.replaceTrack(sVideoTrack);
-
-// Если юзер выбрал "делиться звуком", заменяем микрофон на звук системы
-if (sAudioTrack && aSender) {
-aSender.replaceTrack(sAudioTrack);}
-
-document.getElementById('local-video').srcObject = screenStream;
-btn.classList.add('active');
-sVideoTrack.onended = () => toggleScreen();
-} catch (e) { statusMsg("Демка отменена"); }
-} else {
-// Возврат на камеру
-screenStream.getTracks().forEach(t => t.stop());
-screenStream = null;
-vSender.replaceTrack(localStream.getVideoTracks()[0]);
-if (aSender) aSender.replaceTrack(localStream.getAudioTracks()[0]);
-document.getElementById('local-video').srcObject = localStream;
-btn.classList.remove('active');
-}
+function tMic() {
+var track = stream.getAudioTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('m-btn').style.background = track.enabled ? "#222" : "var(--red)";
 }
 
-function toggleMic() {
-const t = localStream.getAudioTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('mic-btn').classList.toggle('off', !t.enabled);
-}
-
-function toggleCam() {
-const t = localStream.getVideoTracks()[0];
-t.enabled = !t.enabled;
-document.getElementById('cam-btn').classList.toggle('off', !t.enabled);
+function tVid() {
+var track = stream.getVideoTracks()[0];
+track.enabled = !track.enabled;
+document.getElementById('v-btn').style.background = track.enabled ? "#222" : "var(--red)";
 }
 
 function copyId() {
-const id = document.getElementById('my-id').innerText.replace("ТВОЙ ID: ", "");
-navigator.clipboard.writeText(id).then(() => alert("ID скопирован!"));
+var idText = document.getElementById('my-id').innerText.replace("ID: ", "");
+var el = document.createElement('textarea');
+el.value = idText;
+document.body.appendChild(el);
+el.select();
+document.execCommand('copy');
+document.body.removeChild(el);
+alert("ID скопирован");
 }
 
-init();
+peer.on('error', function(e) {
+stat("PEER ERROR: " + e.type);
+});
 </script>
 </body>
 </html>
