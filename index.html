@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v37 LEGACY</title>
+<title>CALL v38 AUDIO-FIX</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
 body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
 .card { background: #111; padding: 25px; border-radius: 25px; width: 90%; max-width: 360px; text-align: center; border: 1px solid #222; }
-#video-view { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 15px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+#v-view { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 15px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
 video { width: 100%; height: 100%; object-fit: cover; }
 #local-video { position: absolute; top: 10px; right: 10px; width: 70px; height: 90px; border: 1px solid var(--green); border-radius: 10px; z-index: 5; transform: scaleX(-1); }
 .controls { display: none; justify-content: center; gap: 15px; margin-top: 10px; }
@@ -23,7 +23,7 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 <body>
 
 <div class="card">
-<div id="video-view">
+<div id="v-view">
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
 </div>
@@ -34,7 +34,7 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 <button class="btn-round" style="background:var(--red)" onclick="location.reload()">🔚</button>
 </div>
 
-<div class="id-display" id="my-id" onclick="copyId()">ЗАГРУЗКА...</div>
+<div class="id-display" id="my-id" onclick="copyId()">CONNECTING...</div>
 
 <div id="ui-main">
 <input type="text" id="peer-target" placeholder="ID ДРУГА">
@@ -52,8 +52,17 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-// Заменяем все стрелочные функции на обычные (совместимость)
 function stat(t) { document.getElementById('status').innerText = t; }
+
+// Опции для захвата аудио БЕЗ ЭХО и с усилением
+var mediaOptions = {
+video: true,
+audio: {
+echoCancellation: true,
+noiseSuppression: true,
+autoGainControl: true
+}
+};
 
 var myId = localStorage.getItem('p_id');
 if (!myId) {
@@ -61,7 +70,6 @@ myId = 'id-' + Math.floor(Math.random() * 9000 + 1000);
 localStorage.setItem('p_id', myId);
 }
 
-// Инициализация Peer
 var peer = new Peer(myId, {
 host: 'zvonok-3w3f.onrender.com',
 port: 443,
@@ -71,49 +79,55 @@ path: '/peerjs'
 
 var stream;
 
-peer.on('open', function(id) {
-document.getElementById('my-id').innerText = "ID: " + id;
-stat("READY (LEGACY MODE)");
+peer.on('open', function(id) {document.getElementById('my-id').innerText = "ID: " + id;
+stat("READY");
 });
 
-// Входящий звонок
 peer.on('call', function(call) {
 document.getElementById('inc-box').style.display = 'flex';
 document.getElementById('ans-btn').onclick = function() {
-navigator.mediaDevices.getUserMedia({video: true, audio: true})
+navigator.mediaDevices.getUserMedia(mediaOptions)
 .then(function(s) {
 stream = s;
 call.answer(stream);
 document.getElementById('inc-box').style.display = 'none';
 handleCall(call);
 })
-.catch(function(err) { alert("Ошибка камеры"); });
+.catch(function(err) { alert("Микрофон/Камера недоступны"); });
 };
 });
 
-// Исходящий звонок
 function makeCall() {
 var tid = document.getElementById('peer-target').value.trim();
 if(!tid) return;
-stat("STARTING CAMERA...");
-navigator.mediaDevices.getUserMedia({video: true, audio: true})
+stat("STARTING MEDIA...");
+navigator.mediaDevices.getUserMedia(mediaOptions)
 .then(function(s) {
 stream = s;
 var call = peer.call(tid, stream);
 handleCall(call);
 })
-.catch(function(err) { stat("CAMERA ERROR"); });
+.catch(function(err) { stat("MEDIA ERROR"); });
 }
 
 function handleCall(call) {
-document.getElementById('video-view').style.display = 'block';
+document.getElementById('v-view').style.display = 'block';
 document.getElementById('ui-main').style.display = 'none';
 document.getElementById('controls').style.display = 'flex';
 document.getElementById('local-video').srcObject = stream;
 
 call.on('stream', function(rs) {
 stat("CONNECTED");
-document.getElementById('remote-video').srcObject = rs;
+var rv = document.getElementById('remote-video');
+rv.srcObject = rs;
+
+// ВАЖНО: Принудительный старт звука для мобилок
+rv.onloadedmetadata = function() {
+rv.play().catch(function() {
+stat("TAP TO UNMUTE");
+document.body.onclick = function() { rv.play(); };
+});
+};
 });
 
 call.on('error', function() { location.reload(); });
@@ -121,15 +135,15 @@ call.on('close', function() { location.reload(); });
 }
 
 function tMic() {
-var track = stream.getAudioTracks()[0];
-track.enabled = !track.enabled;
-document.getElementById('m-btn').style.background = track.enabled ? "#222" : "var(--red)";
+var t = stream.getAudioTracks()[0];
+t.enabled = !t.enabled;
+document.getElementById('m-btn').style.background = t.enabled ? "#222" : "var(--red)";
 }
 
 function tVid() {
-var track = stream.getVideoTracks()[0];
-track.enabled = !track.enabled;
-document.getElementById('v-btn').style.background = track.enabled ? "#222" : "var(--red)";
+var t = stream.getVideoTracks()[0];
+t.enabled = !t.enabled;
+document.getElementById('v-btn').style.background = t.enabled ? "#222" : "var(--red)";
 }
 
 function copyId() {
@@ -143,9 +157,7 @@ document.body.removeChild(el);
 alert("ID скопирован");
 }
 
-peer.on('error', function(e) {
-stat("PEER ERROR: " + e.type);
-});
+peer.on('error', function(e) { stat("PEER ERROR: " + e.type); });
 </script>
 </body>
 </html>
