@@ -2,74 +2,142 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FINAL CALL STABLE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CALL v34 RECOVERY</title>
 <style>
-body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-video { width: 100%; max-width: 400px; border-radius: 10px; background: #222; margin: 10px 0; }
-#local-video { width: 100px; position: absolute; top: 30px; right: 30px; border: 2px solid #00ff88; }
-input { padding: 15px; width: 80%; border-radius: 10px; border: none; margin: 10px 0; }
-button { padding: 15px 30px; border-radius: 10px; border: none; background: #00ff88; font-weight: bold; cursor: pointer; }
-.id-box { font-size: 20px; color: #00ff88; margin: 20px; font-family: monospace; border: 1px dashed; padding: 10px; }
+:root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
+body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
+
+.card { background: #111; padding: 25px; border-radius: 30px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #222; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 4/3; border: 1px solid #333; }
+video { width: 100%; height: 100%; object-fit: cover; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
+
+.controls { display: none; justify-content: center; gap: 15px; margin-bottom: 10px; }
+.btn-circle { width: 55px; height: 55px; border-radius: 50%; border: none; cursor: pointer; font-size: 22px; background: #222; color: #fff; display: flex; align-items: center; justify-content: center; }
+.btn-end { background: var(--red) !important; }
+
+.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 16px; font-weight: bold; }
+input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 15px; text-align: center; box-sizing: border-box; font-size: 16px; outline: none; }
+.btn-main { width: 100%; background: var(--green); color: #000; padding: 18px; font-size: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-main:active { transform: scale(0.98); opacity: 0.8; }
+
+#status { font-size: 11px; color: #555; margin-top: 15px; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; }
+#incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
 
-<h2>VIDEO CALL</h2>
+<div class="card">
+<h3 style="margin:0 0 10px 0; color:var(--green); letter-spacing: 2px;">SECURE CALL</h3>
 
-<div class="id-box" id="my-id">ПОДКЛЮЧЕНИЕ К СЕТИ...</div>
-
+<div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
+</div>
+
+<div class="controls" id="controls">
+<button class="btn-circle" id="mic-btn" onclick="toggleMic()">🎤</button>
+<button class="btn-circle" id="cam-btn" onclick="toggleCam()">📷</button>
+<button class="btn-circle btn-end" onclick="location.reload()">🔚</button>
+</div>
+
+<div class="my-id" id="my-id" onclick="copyId()">ID: LOADING...</div>
 
 <div id="ui">
 <input type="text" id="target-id" placeholder="ID ДРУГА">
+<button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
+</div>
 
+<div id="status">Connecting to server...</div>
+</div>
 
-<button onclick="startCall()">ПОЗВОНИТЬ</button>
+<div id="incoming">
+<h2 style="color:var(--green)">ВХОДЯЩИЙ ВЫЗОВ</h2>
+<button class="btn-main" id="answer-btn" style="width:250px; margin-bottom: 20px;">ОТВЕТИТЬ</button>
+<button class="btn-main" style="background:var(--red); color:#fff; width:250px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-// Генерируем простой ID
-const myId = 'user-' + Math.floor(Math.random() * 10000);
+const statusMsg = (m) => { document.getElementById('status').innerText = m; };
+let myId = 'u' + Math.floor(Math.random()*90000+10000);
+let peer, localStream;
 
-// ВНИМАНИЕ: Используем дефолтные серверы PeerJS Cloud для пробива городов
-const peer = new Peer(myId);
-
-let localStream;
+function init() {
+peer = new Peer(myId, {
+host: 'zvonok-3w3f.onrender.com', // ТВОЙ СЕРВЕР НА RENDER
+port: 443,
+secure: true,
+path: '/peerjs',
+config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] }
+});
 
 peer.on('open', id => {
-document.getElementById('my-id').innerText = "ТВОЙ ID: " + id;
+document.getElementById('my-id').innerText = "ID: " + id;
+statusMsg("Online & Ready");
 });
 
-// Обработка входящего звонка
-peer.on('call', async (call) => {
+peer.on('call', call => {
+document.getElementById('incoming').style.display = 'flex';
+document.getElementById('answer-btn').onclick = async () => {
+try {
 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-document.getElementById('local-video').srcObject = localStream;
 call.answer(localStream);
-
-call.on('stream', remoteStream => {
-document.getElementById('remote-video').srcObject = remoteStream;
+document.getElementById('incoming').style.display = 'none';
+setupCall(call);
+} catch (e) { alert("Включите камеру!"); }
+};
 });
-});
 
-// Функция исходящего звонка
+peer.on('error', e => {
+statusMsg("ERROR: " + e.type);
+if(e.type === 'peer-unavailable') alert("ID не найден!");
+});
+}
+
 async function startCall() {
-const targetId = document.getElementById('target-id').value;
-if(!targetId) return alert("Введи ID!");
-
+const id = document.getElementById('target-id').value.trim();
+if (!id) return;
+try {
+statusMsg("Accessing Camera...");
 localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+statusMsg("Calling...");
+setupCall(peer.call(id, localStream));
+} catch (e) { statusMsg("Camera error"); }
+}
+
+function setupCall(call) {
+document.getElementById('video-container').style.display = 'block';
+document.getElementById('ui').style.display = 'none';
+document.getElementById('controls').style.display = 'flex';
 document.getElementById('local-video').srcObject = localStream;
 
-const call = peer.call(targetId, localStream);
-
 call.on('stream', remoteStream => {
-document.getElementById('remote-video').srcObject = remoteStream;
+statusMsg("Connected");
+const rv = document.getElementById('remote-video');
+rv.srcObject = remoteStream;
+rv.play().catch(() => { document.body.onclick = () => rv.play(); });
 });
-
-call.on('error', err => alert("Ошибка: " + err));
 }
+
+function toggleMic() {
+localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+document.getElementById('mic-btn').style.background = localStream.getAudioTracks()[0].enabled ? "#222" : "var(--red)";
+}
+
+function toggleCam() {
+localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+document.getElementById('cam-btn').style.background = localStream.getVideoTracks()[0].enabled ? "#222" : "var(--red)";
+}
+
+function copyId() {
+const id = document.getElementById('my-id').innerText.replace("ID: ", "");
+navigator.clipboard.writeText(id).then(() => alert("Copied!"));
+}
+
+init();
 </script>
 </body>
 </html>
