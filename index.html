@@ -3,34 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v24 GLOBAL</title>
+<title>CALL v25 TITANIUM</title>
 <style>
-:root { --green: #00ff88; --red: #ff3b3b; --bg: #080808; }
+:root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
 body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-.card { background: #121212; padding: 25px; border-radius: 28px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.card { background: #111; padding: 25px; border-radius: 30px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #222; }
 
 #video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
 video { width: 100%; height: 100%; object-fit: contain; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 85px; height: 115px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; background: #1a1a1a; }
+#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
 
-.controls { display: none; justify-content: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.btn { padding: 14px; border-radius: 16px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; transition: 0.2s; }
-.btn-circle { width: 55px; height: 55px; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+.controls { display: none; justify-content: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.btn { padding: 12px; border-radius: 15px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; font-size: 14px; }
+.btn-circle { width: 50px; height: 50px; border-radius: 50%; font-size: 20px; }
 .off { background: var(--red) !important; }
 .active { background: var(--green) !important; color: #000; }
 
-.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; }
-input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 12px; text-align: center; box-sizing: border-box; font-size: 16px; }
+.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 16px; }
+input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 12px; text-align: center; box-sizing: border-box; }
 .btn-main { width: 100%; background: var(--green); color: #000; padding: 18px; font-size: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
 
 #incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-#status { font-size: 11px; color: #555; margin-top: 10px; }
+#log { font-size: 11px; color: #555; margin-top: 10px; text-align: left; max-height: 50px; overflow-y: auto; }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h3 style="margin:0; color:var(--green); letter-spacing: 1px;">v24 GLOBAL CALL</h3>
+<h3 style="margin:0; color:var(--green)">v25.0 TITANIUM BUILD</h3>
 
 <div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
@@ -44,57 +44,55 @@ input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333;
 <button class="btn" onclick="location.reload()" style="background:var(--red)">СБРОС</button>
 </div>
 
-<div class="my-id" id="my-id" onclick="copyId()">ПОЛУЧЕНИЕ ID...</div>
+<div class="my-id" id="my-id" onclick="copyId()">ПОДКЛЮЧЕНИЕ...</div>
 
 <div id="ui">
-<input type="text" id="target-id" placeholder="ВВЕДИ ID ДРУГА">
+<input type="text" id="target-id" placeholder="ID ДРУГА">
 <button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
 </div>
 
-<div id="status">Готов к подключению</div>
+<div id="log">Инициализация...</div>
 </div>
 
 <div id="incoming">
 <h2 style="color:var(--green)">ВХОДЯЩИЙ ВЫЗОВ</h2>
 <button class="btn-main" id="answer-btn" style="width:250px; margin-bottom: 20px;">ОТВЕТИТЬ</button>
-<button class="btn-main" style="background:var(--red); color:#fff; width:250px;" onclick="location.reload()">ОТКЛОНИТЬ</button>
+<button class="btn-main" style="background:var(--red); color:#fff; width:250px" onclick="location.reload()">ОТКЛОНИТЬ</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-const statusMsg = (m)=> document.getElementById('status').innerText = m;
-let myId = localStorage.getItem('v24_id') || ('id' + Math.floor(Math.random()*90000+10000));
-localStorage.setItem('v24_id', myId);
+const logArea = document.getElementById('log');
+function log(m) { logArea.innerText = m; console.log(m); }
+
+// Генерируем ID один раз для устройства
+let myId = localStorage.getItem('v25_id') || ('u' + Math.floor(Math.random()*90000+10000));
+localStorage.setItem('v25_id', myId);
 
 let peer, localStream, currentCall, screenStream;
 
 function init() {
-// ЖЕСТКАЯ НАСТРОЙКА ДЛЯ ДАЛЬНИХ ЗВОНКОВ
+// НАСТРОЙКА ДЛЯ ГЛОБАЛЬНОЙ СВЯЗИ
 peer = new Peer(myId, {
-host: location.hostname,
-port: location.port || (location.protocol === 'https:' ? 443 : 80),
+host: window.location.hostname, // Берем адрес твоего сервера на Render
+port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
 path: '/peerjs',
-secure: location.protocol === 'https:',
+secure: window.location.protocol === 'https:',
 config: {
 'iceServers': [
 { urls: 'stun:stun.l.google.com:19302' },
 { urls: 'stun:stun1.l.google.com:19302' },
 { urls: 'stun:stun2.l.google.com:19302' },
-{ urls: 'stun:stun3.l.google.com:19302' },
-{ urls: 'stun:stun4.l.google.com:19302' },
-{ urls: 'stun:stun.voipstunt.com' },
-{ urls: 'stun:stun.ekiga.net' },
-{ urls: 'stun:stun.ideasip.com' },
-{ urls: 'stun:stun.schlund.de' },
-{ urls: 'stun:stun.stunprotocol.org:3478' }
+{ urls: 'stun:stun.l.google.com:19302?transport=udp' }
 ],
+'sdpSemantics': 'unified-plan',
 'iceCandidatePoolSize': 10
 }
 });
 
 peer.on('open', id => {
 document.getElementById('my-id').innerText = "ТВОЙ ID: " + id;
-statusMsg("Связь с сервером установлена");
+log("Сервер готов. Ждем вызов.");
 });
 
 peer.on('call', call => {
@@ -105,25 +103,41 @@ localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: tr
 call.answer(localStream);
 document.getElementById('incoming').style.display = 'none';
 setupCall(call);
-} catch (e) { alert("Ошибка доступа к камере!"); }
+} catch (e) { alert("Включи камеру!"); }
 };
 });
 
 peer.on('error', err => {
-console.error(err);
-statusMsg("Ошибка сети: " + err.type);
+log("Ошибка: " + err.type);
+if(err.type === 'network') log("Проблема с сетью/сервером!");
 });
 }
 
 async function startCall() {
 const id = document.getElementById('target-id').value.trim();
-if (!id) return alert("Введи ID!");
+if (!id) return;
 try {
-statusMsg("Запуск камеры...");
+log("Захват медиа...");
 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-statusMsg("Вызов...");
+log("Вызываем " + id);
 setupCall(peer.call(id, localStream));
-} catch (e) { alert("Не удалось включить камеру"); }
+} catch (e) { log("Камера не найдена"); }
+}
+
+async function safePlay(videoElement, stream) {
+// ФИКС AbortError: сначала ставим поток, потом ждем готовности
+if ("srcObject" in videoElement) {
+videoElement.srcObject = stream;
+} else {
+videoElement.src = window.URL.createObjectURL(stream);
+}
+
+try {
+await videoElement.play();
+} catch (err) {
+log("Автоплей заблокирован. Кликни для звука.");
+document.body.onclick = () => videoElement.play();
+}
 }
 
 function setupCall(call) {
@@ -133,15 +147,10 @@ document.getElementById('ui').style.display = 'none';
 document.getElementById('controls').style.display = 'flex';
 document.getElementById('local-video').srcObject = localStream;
 
-call.on('stream', stream => {
-statusMsg("Соединение активно");
+call.on('stream', remoteStream => {
+log("Стрим получен");
 const rv = document.getElementById('remote-video');
-rv.srcObject = stream;
-// Фикс автоплея звука
-rv.play().catch(() => {
-statusMsg("Нажми на экран для включения звука");
-document.body.onclick = () => rv.play();
-});
+safePlay(rv, remoteStream);
 });
 
 call.on('close', () => location.reload());
@@ -155,23 +164,18 @@ const aSender = currentCall.peerConnection.getSenders().find(s => s.track.kind =
 
 if (!screenStream) {
 try {
-// ЗАПРОС ЭКРАНА СО ЗВУКОМ СИСТЕМЫ
 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
 const sVideoTrack = screenStream.getVideoTracks()[0];
 const sAudioTrack = screenStream.getAudioTracks()[0];
 
 vSender.replaceTrack(sVideoTrack);
-
-// Если юзер выбрал "делиться звуком", заменяем микрофон на звук системы
-if (sAudioTrack && aSender) {
-aSender.replaceTrack(sAudioTrack);}
+if (sAudioTrack && aSender) aSender.replaceTrack(sAudioTrack);
 
 document.getElementById('local-video').srcObject = screenStream;
 btn.classList.add('active');
 sVideoTrack.onended = () => toggleScreen();
-} catch (e) { statusMsg("Демка отменена"); }
+} catch (e) { log("Демка отменена"); }
 } else {
-// Возврат на камеру
 screenStream.getTracks().forEach(t => t.stop());
 screenStream = null;
 vSender.replaceTrack(localStream.getVideoTracks()[0]);
