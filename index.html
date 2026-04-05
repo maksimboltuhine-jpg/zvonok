@@ -2,137 +2,74 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v32 STABLE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINAL CALL STABLE</title>
 <style>
-:root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
-body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-.card { background: #111; padding: 25px; border-radius: 30px; width: 95%; max-width: 400px; text-align: center; border: 1px solid #222; }
-#video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 20px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
-video { width: 100%; height: 100%; object-fit: contain; }
-#local-video { position: absolute; top: 10px; right: 10px; width: 80px; height: 110px; border: 2px solid var(--green); border-radius: 12px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
-.controls { display: none; justify-content: center; gap: 15px; margin-bottom: 10px; }
-.btn-circle { width: 55px; height: 55px; border-radius: 50%; border: none; cursor: pointer; font-size: 22px; background: #222; color: #fff; }
-.my-id { background: #1a1a1a; padding: 15px; border-radius: 15px; margin: 10px 0; color: var(--green); border: 1px solid #333; font-family: monospace; font-size: 18px; font-weight: bold; cursor: pointer; }
-input { width: 100%; padding: 18px; border-radius: 15px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 15px; text-align: center; box-sizing: border-box; font-size: 16px; }
-.btn-main { width: 100%; background: var(--green); color: #000; padding: 18px; font-size: 18px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
-#status { font-size: 12px; color: #888; margin-top: 15px; font-family: monospace; min-height: 1.2em; }
+body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+video { width: 100%; max-width: 400px; border-radius: 10px; background: #222; margin: 10px 0; }
+#local-video { width: 100px; position: absolute; top: 30px; right: 30px; border: 2px solid #00ff88; }
+input { padding: 15px; width: 80%; border-radius: 10px; border: none; margin: 10px 0; }
+button { padding: 15px 30px; border-radius: 10px; border: none; background: #00ff88; font-weight: bold; cursor: pointer; }
+.id-box { font-size: 20px; color: #00ff88; margin: 20px; font-family: monospace; border: 1px dashed; padding: 10px; }
 </style>
 </head>
 <body>
 
-<div class="card">
-<h3 style="margin:0; color:var(--green)">HD VIDEO CALL</h3>
+<h2>VIDEO CALL</h2>
 
-<div id="video-container">
+<div class="id-box" id="my-id">ПОДКЛЮЧЕНИЕ К СЕТИ...</div>
+
 <video id="remote-video" autoplay playsinline></video>
 <video id="local-video" autoplay playsinline muted></video>
-</div>
-
-<div class="controls" id="controls">
-<button class="btn-circle" id="mic-btn" onclick="toggleMic()">🎤</button>
-<button class="btn-circle" id="cam-btn" onclick="toggleCam()">📷</button>
-<button class="btn-circle" style="background:var(--red)" onclick="location.reload()">🔚</button>
-</div>
-
-<div class="my-id" id="my-id" onclick="copyId()">ID: LOADING...</div>
 
 <div id="ui">
-<input type="text" id="target-id" placeholder="ВВЕДИТЕ ID ДРУГА">
-<button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
-</div>
+<input type="text" id="target-id" placeholder="ID ДРУГА">
 
-<div id="status">Инициализация...</div>
+
+<button onclick="startCall()">ПОЗВОНИТЬ</button>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-const statusMsg = (m) => { document.getElementById('status').innerText = m; };
-let myId = 'u' + Math.floor(Math.random()*90000+10000);
-let peer, localStream;
+// Генерируем простой ID
+const myId = 'user-' + Math.floor(Math.random() * 10000);
 
-const constraints = { video: { width: 1280, height: 720 }, audio: true };
+// ВНИМАНИЕ: Используем дефолтные серверы PeerJS Cloud для пробива городов
+const peer = new Peer(myId);
 
-function init() {
-peer = new Peer(myId, {
-host: 'zvonok-3w3f.onrender.com', // ТВОЙ СЕРВЕР
-port: 443,
-secure: true,
-path: '/peerjs',
-config: { 'iceServers': [{ urls: 'stun:stun.l.google.com:19302' }] }
-});
+let localStream;
 
 peer.on('open', id => {
-document.getElementById('my-id').innerText = "ID: " + id;
-statusMsg("Сервер готов");
+document.getElementById('my-id').innerText = "ТВОЙ ID: " + id;
 });
 
+// Обработка входящего звонка
 peer.on('call', async (call) => {
-if (confirm("Входящий вызов! Ответить?")) {
-try {
-localStream = await navigator.mediaDevices.getUserMedia(constraints);
-call.answer(localStream);
-setupCall(call);
-} catch (e) { statusMsg("Ошибка доступа к камере"); }
-}
-});
-
-peer.on('error', e => {
-if (e.type === 'peer-unavailable') alert("Ошибка: ID не найден! Проверьте, что друг в сети.");
-statusMsg("Ошибка: " + e.type);
-});
-}
-
-async function startCall() {
-const targetId = document.getElementById('target-id').value.trim();
-if (!targetId) return alert("Введите ID!");
-
-try {
-statusMsg("Захват медиа...");
-localStream = await navigator.mediaDevices.getUserMedia(constraints);
-statusMsg("Вызов " + targetId + "...");
-setupCall(peer.call(targetId, localStream));
-} catch (e) {
-statusMsg("Камера не найдена");
-alert("Подключите камеру или разрешите доступ в браузере!");
-}
-}
-
-function setupCall(call) {
-document.getElementById('video-container').style.display = 'block';
-document.getElementById('ui').style.display = 'none';
-document.getElementById('controls').style.display = 'flex';
+localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
 document.getElementById('local-video').srcObject = localStream;
+call.answer(localStream);
 
 call.on('stream', remoteStream => {
-statusMsg("Связь установлена");
-const rv = document.getElementById('remote-video');
-rv.srcObject = remoteStream;
-// Защита от AbortError
-const playPromise = rv.play();
-if (playPromise !== undefined) {
-playPromise.catch(e => {
-statusMsg("Нажмите на экран для звука");
-document.body.onclick = () => rv.play();
+document.getElementById('remote-video').srcObject = remoteStream;
 });
-}
 });
-}
 
-function toggleMic() {
-localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-}
+// Функция исходящего звонка
+async function startCall() {
+const targetId = document.getElementById('target-id').value;
+if(!targetId) return alert("Введи ID!");
 
-function toggleCam() {
-localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-}
+localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+document.getElementById('local-video').srcObject = localStream;
 
-function copyId() {
-const id = document.getElementById('my-id').innerText.replace("ID: ", "");
-navigator.clipboard.writeText(id).then(() => alert("ID скопирован!"));
-}
+const call = peer.call(targetId, localStream);
 
-init();
+call.on('stream', remoteStream => {
+document.getElementById('remote-video').srcObject = remoteStream;
+});
+
+call.on('error', err => alert("Ошибка: " + err));
+}
 </script>
 </body>
 </html>
