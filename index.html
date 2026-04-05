@@ -3,34 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>CALL v27 RELAY</title>
+<title>CALL v29 ULTRA-FREE</title>
 <style>
 :root { --green: #00ff88; --red: #ff3b3b; --bg: #050505; }
 body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; }
-.card { background: #111; padding: 20px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #222; position: relative; }
-
+.card { background: #111; padding: 20px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; border: 1px solid #222; }
 #video-container { position: relative; width: 100%; margin: 15px 0; display: none; border-radius: 15px; overflow: hidden; background: #000; aspect-ratio: 16/9; border: 1px solid #333; }
-video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+video { width: 100%; height: 100%; object-fit: contain; }
 #local-video { position: absolute; top: 10px; right: 10px; width: 70px; height: 100px; border: 2px solid var(--green); border-radius: 8px; transform: scaleX(-1); object-fit: cover; z-index: 10; }
-
 .controls { display: none; justify-content: center; gap: 8px; margin-bottom: 10px; }
 .btn { padding: 12px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; background: #222; color: #fff; }
 .btn-circle { width: 45px; height: 45px; border-radius: 50%; font-size: 18px; }
 .off { background: var(--red) !important; }
 .active { background: var(--green) !important; color: #000; }
-
-.my-id { background: #1a1a1a; padding: 12px; border-radius: 12px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 14px; word-break: break-all; }
+.my-id { background: #1a1a1a; padding: 12px; border-radius: 12px; margin: 10px 0; color: var(--green); border: 1px solid #333; cursor: pointer; font-family: monospace; font-size: 14px; }
 input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; margin-bottom: 10px; text-align: center; box-sizing: border-box; }
 .btn-main { width: 100%; background: var(--green); color: #000; padding: 15px; font-size: 16px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-
 #incoming { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
-#debug { font-size: 9px; color: #666; margin-top: 10px; text-align: left; font-family: monospace; }
+#debug { font-size: 10px; color: #666; margin-top: 10px; text-align: left; max-height: 60px; overflow-y: auto; font-family: monospace; }
 </style>
 </head>
 <body>
 
 <div class="card">
-<h3 style="margin:0; color:var(--green)">v27.0 RELAY BUILD</h3>
+<h3 style="margin:0; color:var(--green)">v29 ULTRA-FREE</h3>
 
 <div id="video-container">
 <video id="remote-video" autoplay playsinline></video>
@@ -44,14 +40,14 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 <button class="btn" onclick="location.reload()" style="background:var(--red)">END</button>
 </div>
 
-<div class="my-id" id="my-id" onclick="copyId()">CONNECTING...</div>
+<div class="my-id" id="my-id" onclick="copyId()">ID: LOADING...</div>
 
 <div id="ui">
 <input type="text" id="target-id" placeholder="ID ДРУГА">
 <button class="btn-main" onclick="startCall()">📞 ПОЗВОНИТЬ</button>
 </div>
 
-<div id="debug">System init...</div>
+<div id="debug">Log: waiting...</div>
 </div>
 
 <div id="incoming">
@@ -62,48 +58,30 @@ input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #333;
 
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 <script>
-const dbg = (m) => { document.getElementById('debug').innerText = m; console.log(m); };
-let myId = localStorage.getItem('v27_id') || ('u' + Math.floor(Math.random()*9000+1000));
-localStorage.setItem('v27_id', myId);
+const dbg = (m) => { document.getElementById('debug').innerHTML += `<div» ${m}</div>`; console.log(m); };
+let myId = localStorage.getItem('v29_id') || ('u' + Math.floor(Math.random()*9000+1000));
+localStorage.setItem('v29_id', myId);
 
 let peer, localStream, currentCall, screenStream;
 
 function init() {
-const config = {
+peer = new Peer(myId, {
 host: window.location.hostname,
 path: '/peerjs',
 port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
 secure: window.location.protocol === 'https:',
 config: {
-// ВОТ ОНО: БЕСПЛАТНЫЙ TURN СЕРВЕР ДЛЯ ПРОБИВА МОБИЛЬНОГО ИНТЕРНЕТА
 'iceServers': [
 { urls: 'stun:stun.l.google.com:19302' },
-{
-urls: 'turn:openrelay.metered.ca:80',
-username: 'openrelayproject',
-credential: 'openrelayproject'
-},
-{
-urls: 'turn:openrelay.metered.ca:443',
-username: 'openrelayproject',
-credential: 'openrelayproject'
-},
-{
-urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-username: 'openrelayproject',
-credential: 'openrelayproject'
-}
+{ urls: 'stun:stun1.l.google.com:19302' },
+{ urls: 'stun:stun.services.mozilla.com' },
+{ urls: 'stun:stun.l.google.com:19302?transport=udp' }
 ],
 'iceCandidatePoolSize': 10
 }
-};
-
-peer = new Peer(myId, config);
-
-peer.on('open', id => {
-document.getElementById('my-id').innerText = "ID: " + id;
-dbg("Сервер: OK (" + window.location.hostname + ")");
 });
+
+peer.on('open', id => { document.getElementById('my-id').innerText = "ID: " + id; dbg("Ready"); });
 
 peer.on('call', call => {
 document.getElementById('incoming').style.display = 'flex';
@@ -113,22 +91,20 @@ localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: tr
 call.answer(localStream);
 document.getElementById('incoming').style.display = 'none';
 setupCall(call);
-} catch (e) { dbg("Ошибка камеры: " + e.message); }
+} catch (e) { alert("Включи камеру!"); }
 };
 });
 
-peer.on('error', e => { dbg("Peer Error: " + e.type); });
+peer.on('error', e => dbg("Error: " + e.type));
 }
 
 async function startCall() {
 const id = document.getElementById('target-id').value.trim();
 if (!id) return;
 try {
-dbg("Захват медиа...");
 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-dbg("Звонок на " + id);
 setupCall(peer.call(id, localStream));
-} catch (e) { dbg("Ошибка камеры. Проверь разрешения."); }
+} catch (e) { dbg("No media access"); }
 }
 
 function setupCall(call) {
@@ -138,17 +114,16 @@ document.getElementById('ui').style.display = 'none';
 document.getElementById('controls').style.display = 'flex';
 document.getElementById('local-video').srcObject = localStream;
 
+call.peerConnection.oniceconnectionstatechange = () => {
+dbg("ICE: " + call.peerConnection.iceConnectionState);
+};
+
 call.on('stream', remoteStream => {
 const rv = document.getElementById('remote-video');
-// ФИКС AbortError: проверяем, не пытаемся ли мы загрузить тот же стрим
 if (rv.srcObject !== remoteStream) {
 rv.srcObject = remoteStream;
-rv.play().catch(e => {
-// Если ошибка AbortError - просто игнорим, плеер сам разберется
-if (e.name !== 'AbortError') {
-dbg("Кликни на экран для звука!");
+rv.play().catch(() => {
 document.body.onclick = () => rv.play();
-}
 });
 }
 });
@@ -162,53 +137,38 @@ const aSender = currentCall.peerConnection.getSenders().find(s => s.track.kind =
 
 if (!screenStream) {
 try {
-// ВОЗВРАЩАЕМ ЗВУК ДЕМКИ
 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-
 vSender.replaceTrack(screenStream.getVideoTracks()[0]);
-
-// Если юзер дал доступ к звуку системы, подменяем микрофон на звук компа
 if (screenStream.getAudioTracks().length > 0 && aSender) {
 aSender.replaceTrack(screenStream.getAudioTracks()[0]);
-dbg("Демка: видео + звук");
-} else {
-dbg("Демка: только видео");
 }
-
 document.getElementById('local-video').srcObject = screenStream;
 btn.classList.add('active');
-
 screenStream.getVideoTracks()[0].onended = () => toggleScreen();
-} catch (e) { dbg("Демка отменена"); }
+} catch (e) { dbg("Share cancelled"); }
 } else {
-// Возврат камеры и микрофона
 screenStream.getTracks().forEach(t => t.stop());
 screenStream = null;
-
 vSender.replaceTrack(localStream.getVideoTracks()[0]);
 if (aSender) aSender.replaceTrack(localStream.getAudioTracks()[0]);
-
 document.getElementById('local-video').srcObject = localStream;
 btn.classList.remove('active');
-dbg("Возврат камеры");
 }
 }
 
 function toggleMic() {
-const track = localStream.getAudioTracks()[0];
-track.enabled = !track.enabled;
-document.getElementById('mic-btn').classList.toggle('off', !track.enabled);
+localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+document.getElementById('mic-btn').classList.toggle('off', !localStream.getAudioTracks()[0].enabled);
 }
 
 function toggleCam() {
-const track = localStream.getVideoTracks()[0];
-track.enabled = !track.enabled;
-document.getElementById('cam-btn').classList.toggle('off', !track.enabled);
+localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+document.getElementById('cam-btn').classList.toggle('off', !localStream.getVideoTracks()[0].enabled);
 }
 
 function copyId() {
 const id = document.getElementById('my-id').innerText.replace("ID: ", "");
-navigator.clipboard.writeText(id).then(() => alert("ID скопирован!"));
+navigator.clipboard.writeText(id).then(() => alert("Copied!"));
 }
 
 init();
